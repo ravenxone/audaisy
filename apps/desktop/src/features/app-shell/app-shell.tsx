@@ -1,8 +1,8 @@
 import { Link } from "react-router-dom";
 import type { ReactNode } from "react";
+import type { ProjectCard } from "@audaisy/contracts";
 
 import type { TemporaryLocalProfile } from "@/app/bootstrap/temporary-local-bootstrap";
-import type { ProjectCard } from "@/shared/api/contracts-mirror";
 
 type AppShellProps = {
   projects: ProjectCard[];

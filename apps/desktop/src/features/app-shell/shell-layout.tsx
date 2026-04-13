@@ -1,5 +1,6 @@
 import { Outlet, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
+import type { ProjectCard } from "@audaisy/contracts";
 
 import {
   useTemporaryLocalBootstrapSupport,
@@ -7,7 +8,6 @@ import {
 } from "@/app/bootstrap/temporary-local-bootstrap";
 import { AppShell } from "@/features/app-shell/app-shell";
 import { useAudaisyClient } from "@/shared/api/client-context";
-import type { ProjectCard } from "@/shared/api/contracts-mirror";
 
 type ShellState =
   | { status: "loading" }

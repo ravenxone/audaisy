@@ -4,7 +4,7 @@ import {
   useTemporaryLocalBootstrapSupport,
   type TemporaryLocalProfile,
 } from "@/app/bootstrap/temporary-local-bootstrap";
-import type { RuntimeStatusResponse } from "@/shared/api/contracts-mirror";
+import type { RuntimeStatusResponse } from "@audaisy/contracts";
 import { useAudaisyClient } from "@/shared/api/client-context";
 
 type OnboardingState =
@@ -102,7 +102,7 @@ export function OnboardingRoute() {
           {state.status === "ready" && state.runtimeStatus.blockingIssues.length > 0 ? (
             <ul className="status-list">
               {state.runtimeStatus.blockingIssues.map((issue) => (
-                <li key={issue}>{issue}</li>
+                <li key={issue.code}>{issue.message}</li>
               ))}
             </ul>
           ) : null}

@@ -2,6 +2,11 @@ node_modules
 dist
 .DS_Store
 coverage
+__pycache__
+*.pyc
+.pytest_cache
+.venv
+apps/runtime/.venv
 apps/desktop/dist
 apps/desktop/src-tauri/gen
 apps/desktop/src-tauri/target

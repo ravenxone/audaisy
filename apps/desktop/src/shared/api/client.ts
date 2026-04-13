@@ -1,19 +1,19 @@
 import type {
+  CreateImportResponse,
   CreateProjectRequest,
-  ProjectCard,
-  ProjectImportResponse,
-  ProjectResponse,
+  ListProjectsResponse,
+  ProjectDetailResponse,
   RuntimeStatusResponse,
-} from "@/shared/api/contracts-mirror";
+} from "@audaisy/contracts";
 
 export type AudaisyClient = {
   runtime: {
     getStatus: () => Promise<RuntimeStatusResponse>;
   };
   projects: {
-    list: () => Promise<ProjectCard[]>;
-    create: (input: CreateProjectRequest) => Promise<ProjectResponse>;
-    get: (projectId: string) => Promise<ProjectResponse>;
-    importFile: (projectId: string, file: File) => Promise<ProjectImportResponse>;
+    list: () => Promise<ListProjectsResponse["projects"]>;
+    create: (input: CreateProjectRequest) => Promise<ProjectDetailResponse>;
+    get: (projectId: string) => Promise<ProjectDetailResponse>;
+    importFile: (projectId: string, file: File) => Promise<CreateImportResponse>;
   };
 };

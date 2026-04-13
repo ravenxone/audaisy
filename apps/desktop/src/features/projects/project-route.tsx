@@ -1,16 +1,16 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import type { ProjectDetailResponse } from "@audaisy/contracts";
 
 import { UploadDropzone } from "@/features/uploads/upload-dropzone";
 import { useAudaisyClient } from "@/shared/api/client-context";
-import type { ProjectResponse } from "@/shared/api/contracts-mirror";
 
 const ACCEPTED_FORMATS = [".pdf", ".txt", ".md"];
 
 type ProjectState =
   | { status: "loading" }
   | { status: "error"; message: string }
-  | { status: "ready"; project: ProjectResponse };
+  | { status: "ready"; project: ProjectDetailResponse };
 
 export function ProjectRoute() {
   const { projectId = "" } = useParams();
@@ -79,7 +79,11 @@ export function ProjectRoute() {
 
       <UploadDropzone
         acceptedFormats={ACCEPTED_FORMATS}
-        onUpload={(file) => client.projects.importFile(state.project.id, file)}
+        onUpload={async (file) => {
+          const response = await client.projects.importFile(state.project.id, file);
+          setState({ status: "ready", project: response.project });
+          return response;
+        }}
       />
     </section>
   );

@@ -1,7 +1,7 @@
 import { act, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type { ProjectDetailResponse } from "@audaisy/contracts";
 
-import type { ProjectResponse } from "@/shared/api/contracts-mirror";
 import { renderApp } from "@/test/render-app";
 import { createDeferred } from "@/test/test-utils";
 import { createInMemoryAudaisyClient } from "@/shared/api/adapters/in-memory-client";
@@ -9,7 +9,7 @@ import { createInMemoryAudaisyClient } from "@/shared/api/adapters/in-memory-cli
 describe("Get started flow", () => {
   it("triggers project creation exactly once", async () => {
     const user = userEvent.setup();
-    const deferred = createDeferred<ProjectResponse>();
+    const deferred = createDeferred<ProjectDetailResponse>();
     const client = createInMemoryAudaisyClient({
       createProjectImpl: () => deferred.promise,
     });
@@ -30,7 +30,7 @@ describe("Get started flow", () => {
 
   it("shows a loading and disabled state while pending", async () => {
     const user = userEvent.setup();
-    const deferred = createDeferred<ProjectResponse>();
+    const deferred = createDeferred<ProjectDetailResponse>();
     const client = createInMemoryAudaisyClient({
       createProjectImpl: () => deferred.promise,
     });

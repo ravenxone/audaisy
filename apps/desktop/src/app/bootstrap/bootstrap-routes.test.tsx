@@ -26,7 +26,12 @@ describe("bootstrap routing", () => {
         canRun3BQuantized: true,
         availableDiskBytes: 100_000_000,
         minimumDiskFreeBytes: 10_000_000,
-        blockingIssues: ["Models not installed"],
+        blockingIssues: [
+          {
+            code: "MODELS_MISSING",
+            message: "Models not installed",
+          },
+        ],
       },
     });
 

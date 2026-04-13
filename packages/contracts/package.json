@@ -1,0 +1,15 @@
+{
+  "name": "@audaisy/contracts",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./index.js"
+    },
+    "./openapi.json": "./openapi.json",
+    "./version.txt": "./version.txt"
+  },
+  "types": "./index.d.ts"
+}

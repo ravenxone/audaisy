@@ -1,10 +1,10 @@
 import { useId, useMemo, useState } from "react";
 
-import type { ProjectImportResponse } from "@/shared/api/contracts-mirror";
+import type { CreateImportResponse } from "@audaisy/contracts";
 
 type UploadDropzoneProps = {
   acceptedFormats: string[];
-  onUpload: (file: File) => Promise<ProjectImportResponse>;
+  onUpload: (file: File) => Promise<CreateImportResponse>;
 };
 
 type UploadState = "idle" | "drag-over" | "uploading" | "error";
@@ -19,27 +19,27 @@ function getFileExtension(name: string) {
   return name.slice(index).toLowerCase();
 }
 
-function getImportStatusMessage(response: ProjectImportResponse) {
-  switch (response.status) {
-    case "accepted":
+function getImportStatusMessage(response: CreateImportResponse) {
+  switch (response.import.state) {
+    case "stored":
       return {
         tone: "neutral" as const,
-        message: `Accepted ${response.sourceFileName} for import processing.`,
+        message: `Stored ${response.import.sourceFileName} safely for import processing.`,
       };
     case "processing":
       return {
         tone: "neutral" as const,
-        message: `Processing ${response.sourceFileName}.`,
+        message: `Processing ${response.import.sourceFileName}.`,
       };
     case "completed":
       return {
         tone: "success" as const,
-        message: `Import completed for ${response.sourceFileName}.`,
+        message: `Import completed for ${response.import.sourceFileName}.`,
       };
     case "failed":
       return {
         tone: "error" as const,
-        message: `Import failed for ${response.sourceFileName}. Please try another file or retry.`,
+        message: `Import failed for ${response.import.sourceFileName}. Please try another file or retry.`,
       };
   }
 }

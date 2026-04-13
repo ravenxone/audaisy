@@ -1,19 +1,20 @@
 import type { AudaisyClient } from "@/shared/api/client";
 import type {
+  CreateImportResponse,
   CreateProjectRequest,
+  ProjectImportSummary,
   ProjectCard,
-  ProjectImportResponse,
-  ProjectResponse,
+  ProjectDetailResponse,
   RuntimeStatusResponse,
-} from "@/shared/api/contracts-mirror";
+} from "@audaisy/contracts";
 
 type InMemoryClientOptions = {
-  runtimeStatus?: RuntimeStatusResponse;
+  runtimeStatus?: Partial<RuntimeStatusResponse>;
   getRuntimeStatusImpl?: () => Promise<RuntimeStatusResponse>;
   listProjectsImpl?: () => Promise<ProjectCard[]>;
-  createProjectImpl?: (input: CreateProjectRequest) => Promise<ProjectResponse>;
-  importFileImpl?: (projectId: string, file: File) => Promise<ProjectImportResponse>;
-  initialProjects?: ProjectResponse[];
+  createProjectImpl?: (input: CreateProjectRequest) => Promise<ProjectDetailResponse>;
+  importFileImpl?: (projectId: string, file: File) => Promise<CreateImportResponse>;
+  initialProjects?: ProjectDetailResponse[];
 };
 
 type InMemoryAudaisyClient = AudaisyClient & {
@@ -24,22 +25,40 @@ type InMemoryAudaisyClient = AudaisyClient & {
     getProject: number;
   };
   factories: {
-    project: (id: string, title: string) => ProjectResponse;
-    projectCard: (project: ProjectResponse) => ProjectCard;
+    project: (id: string, title: string) => ProjectDetailResponse;
+    projectCard: (project: ProjectDetailResponse) => ProjectCard;
   };
 };
 
-const DEFAULT_RUNTIME_STATUS: RuntimeStatusResponse = {
-  healthy: true,
-  modelsReady: true,
-  activeModelTier: "tada-3b-q4",
-  canRun3BQuantized: true,
-  availableDiskBytes: 64_000_000_000,
-  minimumDiskFreeBytes: 8_000_000_000,
-  blockingIssues: [],
-};
+function buildRuntimeStatus(overrides: Partial<RuntimeStatusResponse> = {}): RuntimeStatusResponse {
+  return {
+    healthy: true,
+    contractVersion: "0.1.0",
+    modelsReady: true,
+    activeModelTier: "tada-3b-q4",
+    defaultModelTier: "tada-3b-q4",
+    canRun3BQuantized: true,
+    diskReady: true,
+    availableDiskBytes: 64_000_000_000,
+    minimumDiskFreeBytes: 8_000_000_000,
+    blockingIssues: [],
+    modelInstall: {
+      state: "installed",
+      requestedTier: "tada-3b-q4",
+      resolvedTier: "tada-3b-q4",
+      manifestVersion: "test-manifest",
+      checksumVerified: true,
+      bytesDownloaded: null,
+      totalBytes: null,
+      updatedAt: "2026-04-13T12:00:00.000Z",
+      lastErrorCode: null,
+      lastErrorMessage: null,
+    },
+    ...overrides,
+  };
+}
 
-function createProjectFactory(id: string, title: string): ProjectResponse {
+function createProjectFactory(id: string, title: string): ProjectDetailResponse {
   const timestamp = new Date("2026-04-13T12:00:00.000Z").toISOString();
   const isSample = id === "sample-project";
 
@@ -68,19 +87,23 @@ function createProjectFactory(id: string, title: string): ProjectResponse {
           },
         ]
       : [],
+    imports: [],
     defaultVoicePresetId: null,
     createdAt: timestamp,
     updatedAt: timestamp,
+    lastOpenedAt: timestamp,
   };
 }
 
-function createProjectCard(project: ProjectResponse): ProjectCard {
+function createProjectCard(project: ProjectDetailResponse): ProjectCard {
   return {
     id: project.id,
     title: project.title,
     chapterCount: project.chapters.length,
-    lastOpenedAt: project.updatedAt,
+    lastOpenedAt: project.lastOpenedAt,
     activeJobCount: 0,
+    createdAt: project.createdAt,
+    updatedAt: project.updatedAt,
   };
 }
 
@@ -93,7 +116,7 @@ function slugifyTitle(title: string) {
 }
 
 export function createInMemoryAudaisyClient(options: InMemoryClientOptions = {}): InMemoryAudaisyClient {
-  const runtimeStatus = options.runtimeStatus ?? DEFAULT_RUNTIME_STATUS;
+  const runtimeStatus = buildRuntimeStatus(options.runtimeStatus);
   const calls = {
     createProject: 0,
     importFile: 0,
@@ -102,7 +125,7 @@ export function createInMemoryAudaisyClient(options: InMemoryClientOptions = {})
   };
 
   const seededProjects = options.initialProjects ?? [createProjectFactory("sample-project", "Sample Project")];
-  const projects = new Map<string, ProjectResponse>(seededProjects.map((project) => [project.id, project]));
+  const projects = new Map<string, ProjectDetailResponse>(seededProjects.map((project) => [project.id, project]));
 
   const client: InMemoryAudaisyClient = {
     runtime: {
@@ -142,13 +165,34 @@ export function createInMemoryAudaisyClient(options: InMemoryClientOptions = {})
           throw new Error(`Project ${projectId} was not found.`);
         }
 
+        const project = projects.get(projectId);
+        if (!project) {
+          throw new Error(`Project ${projectId} was not found.`);
+        }
+
+        const timestamp = new Date("2026-04-13T12:00:00.000Z").toISOString();
+        const importSummary: ProjectImportSummary = {
+          id: `import-${projectId}`,
+          state: "stored",
+          sourceFileName: file.name,
+          sourceMimeType: file.type || "application/octet-stream",
+          sourceSha256: `sha256-${projectId}`,
+          fileSizeBytes: file.size,
+          createdAt: timestamp,
+          updatedAt: timestamp,
+          failureMessage: null,
+        };
+        const updatedProject: ProjectDetailResponse = {
+          ...project,
+          imports: [importSummary, ...project.imports],
+          updatedAt: timestamp,
+        };
+        projects.set(projectId, updatedProject);
+
         return (
           (await options.importFileImpl?.(projectId, file)) ?? {
-            importId: `import-${projectId}`,
-            documentRecordId: `document-${projectId}`,
-            status: "accepted",
-            sourceFileName: file.name,
-            warningSummary: null,
+            project: updatedProject,
+            import: importSummary,
           }
         );
       },

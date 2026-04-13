@@ -1,12 +1,12 @@
 import { act, fireEvent, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type { CreateImportResponse, ProjectDetailResponse } from "@audaisy/contracts";
 
-import type { ProjectImportResponse } from "@/shared/api/contracts-mirror";
 import { renderApp } from "@/test/render-app";
 import { createDeferred, createFile } from "@/test/test-utils";
 import { createInMemoryAudaisyClient } from "@/shared/api/adapters/in-memory-client";
 
-const SEEDED_PROJECTS = [
+const SEEDED_PROJECTS: ProjectDetailResponse[] = [
   {
     id: "sample-project",
     title: "Sample Project",
@@ -15,17 +15,21 @@ const SEEDED_PROJECTS = [
       { id: "sample-2", title: "Chapter 2", order: 2, warningCount: 0 },
       { id: "sample-3", title: "Chapter 3", order: 3, warningCount: 0 },
     ],
+    imports: [],
     defaultVoicePresetId: null,
     createdAt: "2026-04-13T12:00:00.000Z",
     updatedAt: "2026-04-13T12:00:00.000Z",
+    lastOpenedAt: "2026-04-13T12:00:00.000Z",
   },
   {
     id: "your-first-project",
     title: "Your first Project",
     chapters: [],
+    imports: [],
     defaultVoicePresetId: null,
     createdAt: "2026-04-13T12:00:00.000Z",
     updatedAt: "2026-04-13T12:00:00.000Z",
+    lastOpenedAt: "2026-04-13T12:00:00.000Z",
   },
 ];
 
@@ -76,7 +80,7 @@ describe("Upload screen", () => {
 
   it("shows an uploading state while the import is pending", async () => {
     const user = userEvent.setup();
-    const deferred = createDeferred<ProjectImportResponse>();
+    const deferred = createDeferred<CreateImportResponse>();
     const client = createInMemoryAudaisyClient({
       initialProjects: SEEDED_PROJECTS,
       importFileImpl: () => deferred.promise,
@@ -91,21 +95,28 @@ describe("Upload screen", () => {
 
     await act(async () => {
       deferred.resolve({
-        importId: "import-1",
-        documentRecordId: "document-1",
-        status: "accepted",
-        sourceFileName: "chapter.txt",
-        warningSummary: null,
+        project: SEEDED_PROJECTS[1],
+        import: {
+          id: "import-1",
+          state: "stored",
+          sourceFileName: "chapter.txt",
+          sourceMimeType: "text/plain",
+          sourceSha256: "sha256-import-1",
+          fileSizeBytes: 12,
+          createdAt: "2026-04-13T12:00:00.000Z",
+          updatedAt: "2026-04-13T12:00:00.000Z",
+          failureMessage: null,
+        },
       });
       await deferred.promise;
     });
 
-    expect(await screen.findByText("Accepted chapter.txt for import processing.")).toBeInTheDocument();
+    expect(await screen.findByText("Stored chapter.txt safely for import processing.")).toBeInTheDocument();
   });
 
   it("does not trigger upload twice while pending", async () => {
     const user = userEvent.setup();
-    const deferred = createDeferred<ProjectImportResponse>();
+    const deferred = createDeferred<CreateImportResponse>();
     const client = createInMemoryAudaisyClient({
       initialProjects: SEEDED_PROJECTS,
       importFileImpl: () => deferred.promise,
@@ -125,11 +136,18 @@ describe("Upload screen", () => {
 
     await act(async () => {
       deferred.resolve({
-        importId: "import-1",
-        documentRecordId: "document-1",
-        status: "processing",
-        sourceFileName: "chapter.txt",
-        warningSummary: null,
+        project: SEEDED_PROJECTS[1],
+        import: {
+          id: "import-1",
+          state: "processing",
+          sourceFileName: "chapter.txt",
+          sourceMimeType: "text/plain",
+          sourceSha256: "sha256-import-1",
+          fileSizeBytes: 12,
+          createdAt: "2026-04-13T12:00:00.000Z",
+          updatedAt: "2026-04-13T12:00:00.000Z",
+          failureMessage: null,
+        },
       });
       await deferred.promise;
     });
@@ -161,11 +179,18 @@ describe("Upload screen", () => {
     const client = createInMemoryAudaisyClient({
       initialProjects: SEEDED_PROJECTS,
       importFileImpl: async () => ({
-        importId: "import-1",
-        documentRecordId: null,
-        status: "failed",
-        sourceFileName: "chapter.txt",
-        warningSummary: null,
+        project: SEEDED_PROJECTS[1],
+        import: {
+          id: "import-1",
+          state: "failed",
+          sourceFileName: "chapter.txt",
+          sourceMimeType: "text/plain",
+          sourceSha256: "sha256-import-1",
+          fileSizeBytes: 12,
+          createdAt: "2026-04-13T12:00:00.000Z",
+          updatedAt: "2026-04-13T12:00:00.000Z",
+          failureMessage: "Conversion failed",
+        },
       }),
     });
 

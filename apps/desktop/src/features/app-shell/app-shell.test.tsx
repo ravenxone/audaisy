@@ -21,6 +21,8 @@ describe("AppShell", () => {
             chapterCount: 3,
             lastOpenedAt: null,
             activeJobCount: 0,
+            createdAt: "2026-04-13T12:00:00.000Z",
+            updatedAt: "2026-04-13T12:00:00.000Z",
           },
         ]}
       >
