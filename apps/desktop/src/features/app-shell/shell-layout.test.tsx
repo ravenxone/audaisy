@@ -11,7 +11,7 @@ describe("AppShellLayout", () => {
       },
     });
 
-    renderApp({ client, initialEntries: ["/library"] });
+    renderApp({ client, initialEntries: ["/home"] });
 
     expect(await screen.findByRole("heading", { name: "Workspace issue" })).toBeInTheDocument();
     expect(screen.getByText("Projects unavailable")).toBeInTheDocument();

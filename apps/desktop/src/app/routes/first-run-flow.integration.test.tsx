@@ -9,7 +9,7 @@ describe("first-run integration flow", () => {
     const user = userEvent.setup();
     const client = createInMemoryAudaisyClient();
 
-    renderApp({ client, initialEntries: ["/library"] });
+    renderApp({ client, initialEntries: ["/home"] });
 
     await user.click(await screen.findByRole("button", { name: "Get started" }));
 

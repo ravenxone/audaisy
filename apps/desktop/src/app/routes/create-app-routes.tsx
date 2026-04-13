@@ -35,7 +35,7 @@ export function createAppRoutes({ client, temporaryLocalBootstrapSupport }: AppD
         <Route element={<BootstrapGate />} index />
         <Route element={<OnboardingRoute />} path="onboarding" />
         <Route element={<AppShellLayout />}>
-          <Route element={<HomeRoute />} path="library" />
+          <Route element={<HomeRoute />} path="home" />
           <Route element={<ProjectRoute />} path="projects/:projectId" />
         </Route>
       </Route>

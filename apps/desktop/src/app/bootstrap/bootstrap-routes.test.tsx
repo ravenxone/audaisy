@@ -5,7 +5,7 @@ import { renderApp } from "@/test/render-app";
 import { createInMemoryAudaisyClient } from "@/shared/api/adapters/in-memory-client";
 
 describe("bootstrap routing", () => {
-  it("routes to /library when runtime is healthy and models are ready", async () => {
+  it("routes to /home when runtime is healthy and models are ready", async () => {
     const client = createInMemoryAudaisyClient();
 
     renderApp({ client, initialEntries: ["/"] });
@@ -13,7 +13,7 @@ describe("bootstrap routing", () => {
     await screen.findByRole("heading", { name: "Active Jobs" });
 
     await waitFor(() => {
-      expect(window.location.pathname).toBe("/library");
+      expect(window.location.pathname).toBe("/home");
     });
   });
 

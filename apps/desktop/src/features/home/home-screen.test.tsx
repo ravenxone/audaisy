@@ -7,7 +7,7 @@ describe("Home screen", () => {
   it("renders the expected headings and CTA", async () => {
     const client = createInMemoryAudaisyClient();
 
-    renderApp({ client, initialEntries: ["/library"] });
+    renderApp({ client, initialEntries: ["/home"] });
 
     expect(await screen.findByRole("heading", { name: "Active Jobs" })).toBeInTheDocument();
     expect(screen.getByText("You have no jobs running at the moment")).toBeInTheDocument();
@@ -16,5 +16,8 @@ describe("Home screen", () => {
     expect(screen.getByRole("heading", { name: "Upload a file" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Check the imported text" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Generate audio and share!" })).toBeInTheDocument();
+    expect(screen.queryByText("Library")).not.toBeInTheDocument();
+    expect(screen.queryByText("Bring in a manuscript draft and let Audaisy prepare the first project workspace for it.")).not.toBeInTheDocument();
+    expect(screen.queryByText("01")).not.toBeInTheDocument();
   });
 });

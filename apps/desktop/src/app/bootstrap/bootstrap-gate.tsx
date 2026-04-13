@@ -32,7 +32,7 @@ export function BootstrapGate() {
           return;
         }
 
-        navigate("/library", { replace: true });
+        navigate("/home", { replace: true });
       } catch (error) {
         if (!cancelled) {
           setState({
