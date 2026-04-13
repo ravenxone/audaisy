@@ -1,7 +1,6 @@
 import type { AudaisyClient } from "@/shared/api/client";
 import type {
   CreateProjectRequest,
-  LocalProfile,
   ProjectCard,
   ProjectImportResponse,
   ProjectResponse,
@@ -10,7 +9,8 @@ import type {
 
 type InMemoryClientOptions = {
   runtimeStatus?: RuntimeStatusResponse;
-  profile?: LocalProfile;
+  getRuntimeStatusImpl?: () => Promise<RuntimeStatusResponse>;
+  listProjectsImpl?: () => Promise<ProjectCard[]>;
   createProjectImpl?: (input: CreateProjectRequest) => Promise<ProjectResponse>;
   importFileImpl?: (projectId: string, file: File) => Promise<ProjectImportResponse>;
   initialProjects?: ProjectResponse[];
@@ -37,11 +37,6 @@ const DEFAULT_RUNTIME_STATUS: RuntimeStatusResponse = {
   availableDiskBytes: 64_000_000_000,
   minimumDiskFreeBytes: 8_000_000_000,
   blockingIssues: [],
-};
-
-const DEFAULT_PROFILE: LocalProfile = {
-  name: "Raven",
-  avatar: "sunflower-avatar",
 };
 
 function createProjectFactory(id: string, title: string): ProjectResponse {
@@ -99,7 +94,6 @@ function slugifyTitle(title: string) {
 
 export function createInMemoryAudaisyClient(options: InMemoryClientOptions = {}): InMemoryAudaisyClient {
   const runtimeStatus = options.runtimeStatus ?? DEFAULT_RUNTIME_STATUS;
-  const profile = options.profile ?? DEFAULT_PROFILE;
   const calls = {
     createProject: 0,
     importFile: 0,
@@ -112,16 +106,13 @@ export function createInMemoryAudaisyClient(options: InMemoryClientOptions = {})
 
   const client: InMemoryAudaisyClient = {
     runtime: {
-      getStatus: async () => runtimeStatus,
-    },
-    profile: {
-      getLocalProfile: async () => profile,
+      getStatus: async () => (await options.getRuntimeStatusImpl?.()) ?? runtimeStatus,
     },
     projects: {
       list: async () => {
         calls.listProjects += 1;
 
-        return Array.from(projects.values()).map(createProjectCard);
+        return (await options.listProjectsImpl?.()) ?? Array.from(projects.values()).map(createProjectCard);
       },
       create: async (input) => {
         calls.createProject += 1;

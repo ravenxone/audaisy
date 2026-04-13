@@ -1,6 +1,5 @@
 import type {
   CreateProjectRequest,
-  LocalProfile,
   ProjectCard,
   ProjectImportResponse,
   ProjectResponse,
@@ -10,9 +9,6 @@ import type {
 export type AudaisyClient = {
   runtime: {
     getStatus: () => Promise<RuntimeStatusResponse>;
-  };
-  profile: {
-    getLocalProfile: () => Promise<LocalProfile>;
   };
   projects: {
     list: () => Promise<ProjectCard[]>;

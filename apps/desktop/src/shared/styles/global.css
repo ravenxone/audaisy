@@ -234,6 +234,11 @@ a {
   background: rgba(255, 255, 255, 0.6);
 }
 
+.sidebar-link-disabled {
+  opacity: 0.56;
+  cursor: default;
+}
+
 .sidebar-action {
   background: rgba(255, 255, 255, 0.55);
   color: rgba(109, 87, 0, 0.6);
@@ -336,6 +341,12 @@ a {
   background: rgba(255, 255, 255, 0.9);
   border: 1px solid rgba(109, 87, 0, 0.14);
   color: var(--color-text-primary);
+}
+
+.upload-select-button[aria-disabled="true"] {
+  cursor: wait;
+  opacity: 0.72;
+  pointer-events: none;
 }
 
 .empty-state-panel {

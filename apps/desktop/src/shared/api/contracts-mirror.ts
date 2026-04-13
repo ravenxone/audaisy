@@ -49,8 +49,3 @@ export type ProjectImportResponse = {
   sourceFileName: string;
   warningSummary: WarningSummary | null;
 };
-
-export type LocalProfile = {
-  name: string;
-  avatar: string | null;
-};

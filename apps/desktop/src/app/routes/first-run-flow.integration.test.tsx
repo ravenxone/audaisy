@@ -14,7 +14,8 @@ describe("first-run integration flow", () => {
     await user.click(await screen.findByRole("button", { name: "Get started" }));
 
     expect(await screen.findByRole("heading", { name: "Upload a file to get started" })).toBeInTheDocument();
-    expect(screen.getByText("Your first Project")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Your first Project" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Your first Project" })).toBeInTheDocument();
     expect(screen.getByTestId("upload-dropzone")).toBeInTheDocument();
   });
 });

@@ -32,7 +32,19 @@ export default tseslint.config(
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
-      "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
+      "react-refresh/only-export-components": [
+        "warn",
+        {
+          allowConstantExport: true,
+          allowExportNames: ["createAppRoutes", "useAudaisyClient", "renderApp", "renderWithElement"],
+        },
+      ],
+    },
+  },
+  {
+    files: ["src/app/routes/create-app-routes.tsx", "src/test/render-app.tsx"],
+    rules: {
+      "react-refresh/only-export-components": "off",
     },
   },
 );

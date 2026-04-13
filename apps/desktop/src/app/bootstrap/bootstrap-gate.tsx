@@ -7,8 +7,8 @@ type BootstrapState =
   | { status: "loading" }
   | { status: "error"; message: string };
 
-function needsOnboarding(profileName: string, avatar: string | null, modelsReady: boolean, healthy: boolean) {
-  return !healthy || !modelsReady || profileName.trim().length === 0 || !avatar;
+function needsOnboarding(modelsReady: boolean, healthy: boolean) {
+  return !healthy || !modelsReady;
 }
 
 export function BootstrapGate() {
@@ -21,16 +21,13 @@ export function BootstrapGate() {
 
     async function resolveBootstrap() {
       try {
-        const [runtimeStatus, profile] = await Promise.all([
-          client.runtime.getStatus(),
-          client.profile.getLocalProfile(),
-        ]);
+        const runtimeStatus = await client.runtime.getStatus();
 
         if (cancelled) {
           return;
         }
 
-        if (needsOnboarding(profile.name, profile.avatar, runtimeStatus.modelsReady, runtimeStatus.healthy)) {
+        if (needsOnboarding(runtimeStatus.modelsReady, runtimeStatus.healthy)) {
           navigate("/onboarding", { replace: true });
           return;
         }
@@ -68,7 +65,7 @@ export function BootstrapGate() {
     <main className="bootstrap-screen">
       <div className="status-panel">
         <h1 className="section-title">Checking your workspace</h1>
-        <p className="body-text">Preparing runtime readiness and profile setup.</p>
+        <p className="body-text">Preparing runtime readiness.</p>
       </div>
     </main>
   );

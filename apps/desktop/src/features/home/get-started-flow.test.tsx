@@ -61,6 +61,18 @@ describe("Get started flow", () => {
     expect(window.location.pathname).toBe("/projects/your-first-project");
   });
 
+  it("refreshes the sidebar project list after create and navigation", async () => {
+    const user = userEvent.setup();
+    const client = createInMemoryAudaisyClient();
+
+    renderApp({ client, initialEntries: ["/library"] });
+
+    await user.click(await screen.findByRole("button", { name: "Get started" }));
+
+    await screen.findByRole("heading", { name: "Your first Project" });
+    expect(screen.getByRole("link", { name: "Your first Project" })).toBeInTheDocument();
+  });
+
   it("shows a visible error UI on failure", async () => {
     const user = userEvent.setup();
     const client = createInMemoryAudaisyClient({

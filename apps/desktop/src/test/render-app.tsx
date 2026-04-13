@@ -2,11 +2,14 @@ import { MemoryRouter, useLocation } from "react-router-dom";
 import { render } from "@testing-library/react";
 import { useEffect, type ReactElement } from "react";
 
+import { createInMemoryTemporaryLocalBootstrapSupport } from "@/app/bootstrap/adapters/in-memory-local-bootstrap";
+import type { TemporaryLocalBootstrapSupport } from "@/app/bootstrap/temporary-local-bootstrap";
 import { createAppRoutes } from "@/app/routes/create-app-routes";
 import type { AudaisyClient } from "@/shared/api/client";
 
 type RenderAppOptions = {
   client: AudaisyClient;
+  temporaryLocalBootstrapSupport?: TemporaryLocalBootstrapSupport;
   initialEntries?: string[];
 };
 
@@ -21,11 +24,15 @@ function MirrorLocation() {
   return null;
 }
 
-export function renderApp({ client, initialEntries = ["/"] }: RenderAppOptions) {
+export function renderApp({
+  client,
+  temporaryLocalBootstrapSupport = createInMemoryTemporaryLocalBootstrapSupport(),
+  initialEntries = ["/"],
+}: RenderAppOptions) {
   return render(
     <MemoryRouter initialEntries={initialEntries}>
       <MirrorLocation />
-      {createAppRoutes(client)}
+      {createAppRoutes({ client, temporaryLocalBootstrapSupport })}
     </MemoryRouter>,
   );
 }

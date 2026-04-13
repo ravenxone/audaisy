@@ -1,45 +1,52 @@
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 
+import {
+  useTemporaryLocalBootstrapSupport,
+  type TemporaryLocalProfile,
+} from "@/app/bootstrap/temporary-local-bootstrap";
 import { AppShell } from "@/features/app-shell/app-shell";
 import { useAudaisyClient } from "@/shared/api/client-context";
-import type { LocalProfile, ProjectCard } from "@/shared/api/contracts-mirror";
+import type { ProjectCard } from "@/shared/api/contracts-mirror";
 
-type ShellState = {
-  loading: boolean;
-  projects: ProjectCard[];
-  profile: LocalProfile | null;
-};
+type ShellState =
+  | { status: "loading" }
+  | { status: "error"; message: string }
+  | {
+      status: "ready";
+      projects: ProjectCard[];
+      profile: TemporaryLocalProfile;
+    };
 
 export function AppShellLayout() {
   const client = useAudaisyClient();
-  const [state, setState] = useState<ShellState>({
-    loading: true,
-    projects: [],
-    profile: null,
-  });
+  const temporaryLocalBootstrapSupport = useTemporaryLocalBootstrapSupport();
+  const location = useLocation();
+  const [state, setState] = useState<ShellState>({ status: "loading" });
 
   useEffect(() => {
     let cancelled = false;
 
     async function loadShellData() {
-      const [projects, profile] = await Promise.all([client.projects.list(), client.profile.getLocalProfile()]);
+      const [projects, profile] = await Promise.all([
+        client.projects.list(),
+        temporaryLocalBootstrapSupport.getLocalProfile(),
+      ]);
 
       if (!cancelled) {
         setState({
-          loading: false,
+          status: "ready",
           projects,
           profile,
         });
       }
     }
 
-    loadShellData().catch(() => {
+    loadShellData().catch((error) => {
       if (!cancelled) {
         setState({
-          loading: false,
-          projects: [],
-          profile: null,
+          status: "error",
+          message: error instanceof Error ? error.message : "Unable to load workspace navigation.",
         });
       }
     });
@@ -47,9 +54,9 @@ export function AppShellLayout() {
     return () => {
       cancelled = true;
     };
-  }, [client]);
+  }, [client, location.pathname, temporaryLocalBootstrapSupport]);
 
-  if (state.loading) {
+  if (state.status === "loading") {
     return (
       <main className="bootstrap-screen">
         <div className="status-panel">
@@ -60,8 +67,19 @@ export function AppShellLayout() {
     );
   }
 
+  if (state.status === "error") {
+    return (
+      <main className="bootstrap-screen">
+        <div className="status-panel">
+          <h1 className="section-title">Workspace issue</h1>
+          <p className="body-text">{state.message}</p>
+        </div>
+      </main>
+    );
+  }
+
   return (
-    <AppShell projects={state.projects} profile={state.profile ?? undefined}>
+    <AppShell projects={state.projects} profile={state.profile}>
       <Outlet />
     </AppShell>
   );

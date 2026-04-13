@@ -99,6 +99,42 @@ describe("Upload screen", () => {
       });
       await deferred.promise;
     });
+
+    expect(await screen.findByText("Accepted chapter.txt for import processing.")).toBeInTheDocument();
+  });
+
+  it("does not trigger upload twice while pending", async () => {
+    const user = userEvent.setup();
+    const deferred = createDeferred<ProjectImportResponse>();
+    const client = createInMemoryAudaisyClient({
+      initialProjects: SEEDED_PROJECTS,
+      importFileImpl: () => deferred.promise,
+    });
+
+    renderApp({ client, initialEntries: ["/projects/your-first-project"] });
+
+    const input = await screen.findByLabelText("Upload manuscript file");
+    const dropzone = screen.getByTestId("upload-dropzone");
+
+    await user.upload(input, createFile("chapter.txt", "text/plain"));
+    fireEvent.drop(dropzone, {
+      dataTransfer: { files: [createFile("chapter-again.txt", "text/plain")] },
+    });
+
+    expect(client.calls.importFile).toBe(1);
+
+    await act(async () => {
+      deferred.resolve({
+        importId: "import-1",
+        documentRecordId: "document-1",
+        status: "processing",
+        sourceFileName: "chapter.txt",
+        warningSummary: null,
+      });
+      await deferred.promise;
+    });
+
+    expect(await screen.findByText("Processing chapter.txt.")).toBeInTheDocument();
   });
 
   it("shows an upload error when the import fails", async () => {
@@ -118,5 +154,26 @@ describe("Upload screen", () => {
     await waitFor(() => {
       expect(screen.getByText("Import failed. Please try another file or retry.")).toBeInTheDocument();
     });
+  });
+
+  it("shows a visible upload error when the runtime reports a failed import status", async () => {
+    const user = userEvent.setup();
+    const client = createInMemoryAudaisyClient({
+      initialProjects: SEEDED_PROJECTS,
+      importFileImpl: async () => ({
+        importId: "import-1",
+        documentRecordId: null,
+        status: "failed",
+        sourceFileName: "chapter.txt",
+        warningSummary: null,
+      }),
+    });
+
+    renderApp({ client, initialEntries: ["/projects/your-first-project"] });
+
+    const input = await screen.findByLabelText("Upload manuscript file");
+    await user.upload(input, createFile("chapter.txt", "text/plain"));
+
+    expect(await screen.findByText("Import failed for chapter.txt. Please try another file or retry.")).toBeInTheDocument();
   });
 });

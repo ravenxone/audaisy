@@ -1,10 +1,11 @@
 import { screen, waitFor } from "@testing-library/react";
 
+import { createInMemoryTemporaryLocalBootstrapSupport } from "@/app/bootstrap/adapters/in-memory-local-bootstrap";
 import { renderApp } from "@/test/render-app";
 import { createInMemoryAudaisyClient } from "@/shared/api/adapters/in-memory-client";
 
 describe("bootstrap routing", () => {
-  it("routes to /library when runtime is healthy, models are ready, and profile exists", async () => {
+  it("routes to /library when runtime is healthy and models are ready", async () => {
     const client = createInMemoryAudaisyClient();
 
     renderApp({ client, initialEntries: ["/"] });
@@ -14,17 +15,6 @@ describe("bootstrap routing", () => {
     await waitFor(() => {
       expect(window.location.pathname).toBe("/library");
     });
-  });
-
-  it("routes to /onboarding when the profile is missing", async () => {
-    const client = createInMemoryAudaisyClient({
-      profile: { name: "", avatar: null },
-    });
-
-    renderApp({ client, initialEntries: ["/"] });
-
-    await screen.findByRole("heading", { name: "Welcome to Audaisy" });
-    expect(window.location.pathname).toBe("/onboarding");
   });
 
   it("routes to /onboarding when models are not ready", async () => {
@@ -44,5 +34,32 @@ describe("bootstrap routing", () => {
 
     await screen.findByRole("heading", { name: "Welcome to Audaisy" });
     expect(window.location.pathname).toBe("/onboarding");
+  });
+
+  it("shows a visible startup error when runtime readiness fails to load", async () => {
+    const client = createInMemoryAudaisyClient({
+      getRuntimeStatusImpl: async () => {
+        throw new Error("Runtime offline");
+      },
+    });
+
+    renderApp({ client, initialEntries: ["/"] });
+
+    expect(await screen.findByRole("heading", { name: "Startup issue" })).toBeInTheDocument();
+    expect(screen.getByText("Runtime offline")).toBeInTheDocument();
+  });
+
+  it("shows a visible onboarding error when temporary local profile support fails", async () => {
+    const client = createInMemoryAudaisyClient();
+    const temporaryLocalBootstrapSupport = createInMemoryTemporaryLocalBootstrapSupport({
+      getLocalProfileImpl: async () => {
+        throw new Error("Local profile unavailable");
+      },
+    });
+
+    renderApp({ client, temporaryLocalBootstrapSupport, initialEntries: ["/onboarding"] });
+
+    expect(await screen.findByRole("heading", { name: "Onboarding issue" })).toBeInTheDocument();
+    expect(screen.getByText("Local profile unavailable")).toBeInTheDocument();
   });
 });

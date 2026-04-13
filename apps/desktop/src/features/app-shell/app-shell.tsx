@@ -1,21 +1,19 @@
 import { Link } from "react-router-dom";
 import type { ReactNode } from "react";
 
-import type { LocalProfile, ProjectCard } from "@/shared/api/contracts-mirror";
+import type { TemporaryLocalProfile } from "@/app/bootstrap/temporary-local-bootstrap";
+import type { ProjectCard } from "@/shared/api/contracts-mirror";
 
 type AppShellProps = {
   projects: ProjectCard[];
-  profile?: LocalProfile;
+  profile: TemporaryLocalProfile;
   children: ReactNode;
 };
 
-const DEFAULT_PROFILE: LocalProfile = {
-  name: "Raven",
-  avatar: "sunflower-avatar",
-};
-
-export function AppShell({ projects, profile = DEFAULT_PROFILE, children }: AppShellProps) {
-  const avatarLetter = profile.name.trim().charAt(0).toUpperCase() || "A";
+export function AppShell({ projects, profile, children }: AppShellProps) {
+  const profileName = profile.name.trim() || "Profile setup needed";
+  const avatarLetter = profileName.charAt(0).toUpperCase() || "A";
+  const profileMeta = profile.avatar ? "macOS local profile" : "Local profile still needs setup";
 
   return (
     <div className="app-shell">
@@ -26,12 +24,12 @@ export function AppShell({ projects, profile = DEFAULT_PROFILE, children }: AppS
             <Link className="sidebar-link" to="/library">
               Home
             </Link>
-            <Link className="sidebar-link" to="/library?view=trash">
+            <span aria-disabled="true" className="sidebar-link sidebar-link-disabled">
               Trash
-            </Link>
-            <Link className="sidebar-link" to="/library?view=jobs">
+            </span>
+            <span aria-disabled="true" className="sidebar-link sidebar-link-disabled">
               Active Jobs
-            </Link>
+            </span>
           </nav>
         </div>
 
@@ -55,17 +53,17 @@ export function AppShell({ projects, profile = DEFAULT_PROFILE, children }: AppS
             <a className="sidebar-link" href="https://docs.audaisy.app" target="_blank" rel="noreferrer">
               Documentation
             </a>
-            <Link className="sidebar-link" to="/library?view=settings">
+            <span aria-disabled="true" className="sidebar-link sidebar-link-disabled">
               Settings
-            </Link>
+            </span>
           </nav>
           <div className="profile-row">
             <div className="profile-avatar" aria-hidden="true">
               {avatarLetter}
             </div>
             <div className="profile-copy">
-              <span className="profile-name">{profile.name}</span>
-              <span className="profile-meta">macOS local profile</span>
+              <span className="profile-name">{profileName}</span>
+              <span className="profile-meta">{profileMeta}</span>
             </div>
           </div>
         </div>
