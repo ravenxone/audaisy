@@ -1,4 +1,4 @@
-# Audaisy
+# Audaisy – Give every piece of writing a voice, and every voice an audience.
 
 Audaisy makes high-quality audio creation local.
 
@@ -6,7 +6,7 @@ For a long time, turning writing into natural, publishable audio meant slow stud
 
 Create audiobooks, podcasts, voiceovers, spoken essays, and narrated drafts from the same local workflow.
 
-**Mission:** Give every piece of writing a voice, and every voice an audience.
+
 
 Website: [audaisy.com](https://audaisy.com)
 
