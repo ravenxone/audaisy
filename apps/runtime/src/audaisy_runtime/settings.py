@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from audaisy_runtime import CONTRACT_VERSION, RUNTIME_VERSION
-from audaisy_runtime.contracts.models import ModelTier
+from audaisy_runtime.contracts.models import ImportFormat, ModelTier
 
 
 @dataclass(frozen=True, slots=True)
@@ -19,6 +19,17 @@ class Settings:
     fallback_model_tier: ModelTier = ModelTier.TADA_1B_Q4
     machine_arch_override: str | None = None
     machine_memory_bytes_override: int | None = None
+    supported_import_formats: tuple[ImportFormat, ...] = (
+        ImportFormat.PDF,
+        ImportFormat.TXT,
+        ImportFormat.MD,
+    )
+    allowed_web_origins: tuple[str, ...] = (
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "tauri://localhost",
+        "https://tauri.localhost",
+    )
 
     @property
     def database_path(self) -> Path:

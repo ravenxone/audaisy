@@ -5,6 +5,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from audaisy_runtime.api.router import create_api_router
@@ -33,6 +34,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app = FastAPI(title="Audaisy Runtime", version=resolved_settings.runtime_version, lifespan=lifespan)
     app.state.container = container
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=list(resolved_settings.allowed_web_origins),
+        allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$",
+        allow_credentials=False,
+        allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+        allow_headers=["*"],
+    )
 
     @app.exception_handler(DomainError)
     async def handle_domain_error(_: Request, error: DomainError) -> JSONResponse:

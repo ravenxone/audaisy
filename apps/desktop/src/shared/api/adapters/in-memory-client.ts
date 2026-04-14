@@ -2,6 +2,8 @@ import type { AudaisyClient } from "@/shared/api/client";
 import type {
   CreateImportResponse,
   CreateProjectRequest,
+  PatchProfileRequest,
+  ProfileResponse,
   ProjectImportSummary,
   ProjectCard,
   ProjectDetailResponse,
@@ -11,15 +13,22 @@ import type {
 type InMemoryClientOptions = {
   runtimeStatus?: Partial<RuntimeStatusResponse>;
   getRuntimeStatusImpl?: () => Promise<RuntimeStatusResponse>;
+  profile?: ProfileResponse;
+  getProfileImpl?: () => Promise<ProfileResponse>;
+  updateProfileImpl?: (input: PatchProfileRequest) => Promise<ProfileResponse>;
   listProjectsImpl?: () => Promise<ProjectCard[]>;
   createProjectImpl?: (input: CreateProjectRequest) => Promise<ProjectDetailResponse>;
+  deleteProjectImpl?: (projectId: string) => Promise<void>;
   importFileImpl?: (projectId: string, file: File) => Promise<CreateImportResponse>;
   initialProjects?: ProjectDetailResponse[];
 };
 
 type InMemoryAudaisyClient = AudaisyClient & {
   calls: {
+    getProfile: number;
+    updateProfile: number;
     createProject: number;
+    deleteProject: number;
     importFile: number;
     listProjects: number;
     getProject: number;
@@ -54,6 +63,19 @@ function buildRuntimeStatus(overrides: Partial<RuntimeStatusResponse> = {}): Run
       lastErrorCode: null,
       lastErrorMessage: null,
     },
+    supportedImportFormats: [".pdf", ".txt", ".md"],
+    ...overrides,
+  };
+}
+
+function buildProfile(overrides: Partial<ProfileResponse> = {}): ProfileResponse {
+  return {
+    id: "local",
+    name: "Raven",
+    avatarId: "sunflower-avatar",
+    hasCompletedProfileSetup: true,
+    createdAt: "2026-04-13T12:00:00.000Z",
+    updatedAt: "2026-04-13T12:00:00.000Z",
     ...overrides,
   };
 }
@@ -117,8 +139,12 @@ function slugifyTitle(title: string) {
 
 export function createInMemoryAudaisyClient(options: InMemoryClientOptions = {}): InMemoryAudaisyClient {
   const runtimeStatus = buildRuntimeStatus(options.runtimeStatus);
+  let profile = options.profile ?? buildProfile();
   const calls = {
+    getProfile: 0,
+    updateProfile: 0,
     createProject: 0,
+    deleteProject: 0,
     importFile: 0,
     listProjects: 0,
     getProject: 0,
@@ -130,6 +156,28 @@ export function createInMemoryAudaisyClient(options: InMemoryClientOptions = {})
   const client: InMemoryAudaisyClient = {
     runtime: {
       getStatus: async () => (await options.getRuntimeStatusImpl?.()) ?? runtimeStatus,
+    },
+    profile: {
+      get: async () => {
+        calls.getProfile += 1;
+        return (await options.getProfileImpl?.()) ?? profile;
+      },
+      update: async (input) => {
+        calls.updateProfile += 1;
+        const nextName = input.name ?? profile.name;
+        const nextAvatarId = input.avatarId !== undefined ? input.avatarId : profile.avatarId;
+        const nextProfile =
+          (await options.updateProfileImpl?.(input)) ??
+          buildProfile({
+            ...profile,
+            name: nextName,
+            avatarId: nextAvatarId,
+            hasCompletedProfileSetup: Boolean(nextName.trim() && nextAvatarId),
+            updatedAt: "2026-04-13T12:00:00.000Z",
+          });
+        profile = nextProfile;
+        return nextProfile;
+      },
     },
     projects: {
       list: async () => {
@@ -157,6 +205,16 @@ export function createInMemoryAudaisyClient(options: InMemoryClientOptions = {})
         }
 
         return project;
+      },
+      delete: async (projectId) => {
+        calls.deleteProject += 1;
+
+        if (!projects.has(projectId)) {
+          throw new Error(`Project ${projectId} was not found.`);
+        }
+
+        await options.deleteProjectImpl?.(projectId);
+        projects.delete(projectId);
       },
       importFile: async (projectId, file) => {
         calls.importFile += 1;

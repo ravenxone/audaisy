@@ -39,7 +39,6 @@ def build_container(settings: Settings) -> ApplicationContainer:
     project_repository = ProjectRepository(database)
     document_record_repository = DocumentRecordRepository(database)
     voice_preset_repository = VoicePresetRepository(database)
-
     model_manager = ModelManager(settings, app_paths.cache_models_dir)
     project_service = ProjectService(project_repository, document_record_repository, app_paths)
     profile_service = ProfileService(profile_repository)

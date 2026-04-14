@@ -27,4 +27,3 @@ packages = ["src/audaisy_runtime"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
-

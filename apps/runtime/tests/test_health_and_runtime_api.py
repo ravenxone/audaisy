@@ -17,6 +17,49 @@ def test_healthz_returns_liveness(make_client) -> None:
     }
 
 
+def test_runtime_allows_desktop_dev_origin_for_cors(make_client) -> None:
+    with make_client() as client:
+        response = client.get(
+            "/runtime/status",
+            headers={
+                "Origin": "http://localhost:5173",
+            },
+        )
+
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == "http://localhost:5173"
+
+
+def test_profile_preflight_allows_desktop_dev_origin_for_patch(make_client) -> None:
+    with make_client() as client:
+        response = client.options(
+            "/profile",
+            headers={
+                "Origin": "http://localhost:5173",
+                "Access-Control-Request-Method": "PATCH",
+            },
+        )
+
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == "http://localhost:5173"
+    assert "PATCH" in response.headers["access-control-allow-methods"]
+
+
+def test_project_delete_preflight_allows_local_dev_origins_on_non_default_ports(make_client) -> None:
+    with make_client() as client:
+        response = client.options(
+            "/projects/test-project",
+            headers={
+                "Origin": "http://127.0.0.1:1420",
+                "Access-Control-Request-Method": "DELETE",
+            },
+        )
+
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == "http://127.0.0.1:1420"
+    assert "DELETE" in response.headers["access-control-allow-methods"]
+
+
 def test_runtime_status_reports_no_model_installed_state(make_client) -> None:
     with make_client() as client:
         response = client.get("/runtime/status")
@@ -50,6 +93,7 @@ def test_runtime_status_reports_no_model_installed_state(make_client) -> None:
         "lastErrorCode": "MODEL_DOWNLOAD_UNAVAILABLE",
         "lastErrorMessage": "Model download is not implemented in this runtime slice yet.",
     }
+    assert body["supportedImportFormats"] == [".pdf", ".txt", ".md"]
 
 
 def test_runtime_status_surfaces_unsupported_hardware_before_any_download_request(
@@ -76,7 +120,7 @@ def test_runtime_status_surfaces_unsupported_hardware_before_any_download_reques
         },
         {
             "code": "UNSUPPORTED_HARDWARE",
-            "message": "This machine cannot run the default tada-3b-q4 model tier; install must target tada-1b-q4.",
+            "message": "This machine cannot run the default tada-3b-q4 model tier.",
         },
     ]
 

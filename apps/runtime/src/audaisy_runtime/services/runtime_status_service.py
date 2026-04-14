@@ -74,7 +74,6 @@ class RuntimeStatusService:
                 RuntimeBlockingIssueCode.MODEL_DOWNLOAD_UNAVAILABLE,
                 install_status.last_error_message or "Model download is not currently available.",
             )
-
         if not disk_status.ready:
             add_issue(
                 RuntimeBlockingIssueCode.DISK_SPACE_LOW,
@@ -84,10 +83,7 @@ class RuntimeStatusService:
         if not capability.can_run_3b_quantized and active_model_tier is None:
             add_issue(
                 RuntimeBlockingIssueCode.UNSUPPORTED_HARDWARE,
-                (
-                    f"This machine cannot run the default {self._settings.default_model_tier.value} model tier; "
-                    f"install must target {self._settings.fallback_model_tier.value}."
-                ),
+                f"This machine cannot run the default {self._settings.default_model_tier.value} model tier.",
             )
 
         return RuntimeStatusResponse(
@@ -102,6 +98,7 @@ class RuntimeStatusService:
             minimum_disk_free_bytes=self._settings.minimum_disk_free_bytes,
             blocking_issues=blocking_issues,
             model_install=install_status,
+            supported_import_formats=list(self._settings.supported_import_formats),
         )
 
     def _disk_status(self) -> DiskStatus:

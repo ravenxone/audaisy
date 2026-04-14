@@ -6,7 +6,7 @@ import { renderApp } from "@/test/render-app";
 import { createDeferred } from "@/test/test-utils";
 import { createInMemoryAudaisyClient } from "@/shared/api/adapters/in-memory-client";
 
-describe("Get started flow", () => {
+describe("Create project flow", () => {
   it("triggers project creation exactly once", async () => {
     const user = userEvent.setup();
     const deferred = createDeferred<ProjectDetailResponse>();
@@ -70,7 +70,7 @@ describe("Get started flow", () => {
     await user.click(await screen.findByRole("button", { name: "Get started" }));
 
     await screen.findByRole("heading", { name: "Your first Project" });
-    expect(screen.getByRole("link", { name: "Your first Project" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Your first Project" })).toHaveAttribute("aria-current", "page");
   });
 
   it("shows a visible error UI on failure", async () => {

@@ -154,6 +154,15 @@
         "title": "HealthResponse",
         "type": "object"
       },
+      "ImportFormat": {
+        "enum": [
+          ".pdf",
+          ".txt",
+          ".md"
+        ],
+        "title": "ImportFormat",
+        "type": "string"
+      },
       "ImportState": {
         "enum": [
           "stored",
@@ -676,6 +685,13 @@
           "modelsReady": {
             "title": "Modelsready",
             "type": "boolean"
+          },
+          "supportedImportFormats": {
+            "items": {
+              "$ref": "#/components/schemas/ImportFormat"
+            },
+            "title": "Supportedimportformats",
+            "type": "array"
           }
         },
         "required": [
@@ -689,7 +705,8 @@
           "availableDiskBytes",
           "minimumDiskFreeBytes",
           "blockingIssues",
-          "modelInstall"
+          "modelInstall",
+          "supportedImportFormats"
         ],
         "title": "RuntimeStatusResponse",
         "type": "object"
@@ -963,6 +980,49 @@
       }
     },
     "/projects/{project_id}": {
+      "delete": {
+        "operationId": "delete_project_projects__project_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Project",
+        "tags": [
+          "projects"
+        ]
+      },
       "get": {
         "operationId": "get_project_projects__project_id__get",
         "parameters": [

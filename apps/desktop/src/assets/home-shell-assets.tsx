@@ -1,8 +1,10 @@
 import audaisyLogo from "@/assets/brand/audaisy-logo.png";
 import deleteIcon from "@/assets/icons/delete-02.svg";
+import downloadIcon from "@/assets/icons/download-circle-01.svg";
 import homeIcon from "@/assets/icons/home-07.svg";
 import noteIcon from "@/assets/icons/note.svg";
 import penToolIcon from "@/assets/icons/pen-tool-03.svg";
+import sidebarCollapsedIcon from "@/assets/icons/sidebar-left.svg";
 import sidebarToggleIcon from "@/assets/icons/sidebar-left-01.svg";
 import stickyNoteIcon from "@/assets/icons/sticky-note-03.svg";
 
@@ -17,19 +19,23 @@ type HomeShellImageAsset = {
 };
 
 const settingsFallback = `data:image/svg+xml;utf8,${encodeURIComponent(`
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 12" fill="none">
-    <path d="M6 1.5 6.5 2.4 7.6 2.1 8 3.1 7.2 3.9 7.8 4.7 8.9 4.5 9.3 5.5 8.4 6.1 8.4 6.9 9.3 7.5 8.9 8.5 7.8 8.3 7.2 9.1 8 9.9 7.6 10.9 6.5 10.6 6 11.5 5.5 10.6 4.4 10.9 4 9.9 4.8 9.1 4.2 8.3 3.1 8.5 2.7 7.5 3.6 6.9 3.6 6.1 2.7 5.5 3.1 4.5 4.2 4.7 4.8 3.9 4 3.1 4.4 2.1 5.5 2.4 6 1.5Z" stroke="#6D5700" stroke-width="1" stroke-linejoin="round"/>
-    <circle cx="6" cy="6" r="1.7" stroke="#6D5700" stroke-width="1"/>
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+    <path d="M12 4.2 13.1 2.4 15.7 3.4 15.9 5.8 17.8 7 20.1 6 21.2 8.6 19.3 10.2 19.3 13.8 21.2 15.4 20.1 18 17.8 17 15.9 18.2 15.7 20.6 13.1 21.6 12 19.8 10.9 21.6 8.3 20.6 8.1 18.2 6.2 17 3.9 18 2.8 15.4 4.7 13.8 4.7 10.2 2.8 8.6 3.9 6 6.2 7 8.1 5.8 8.3 3.4 10.9 2.4 12 4.2Z" stroke="#6D5700" stroke-width="1.7" stroke-linejoin="round"/>
+    <circle cx="12" cy="12" r="3.3" stroke="#6D5700" stroke-width="1.7"/>
   </svg>
 `)}`;
 
 export const homeShellAssets: {
   brand: { daisy: HomeShellImageAsset };
   shell: {
-    toggle: HomeShellImageAsset;
+    toggle: {
+      expanded: HomeShellImageAsset;
+      collapsed: HomeShellImageAsset;
+    };
     home: HomeShellImageAsset;
     trash: HomeShellImageAsset;
     activeJobs: HomeShellImageAsset;
+    downloads: HomeShellImageAsset;
     sampleProject: HomeShellImageAsset;
     startSomethingNew: HomeShellImageAsset;
     documentation: HomeShellImageAsset;
@@ -43,7 +49,12 @@ export const homeShellAssets: {
   },
   shell: {
     toggle: {
-      src: sidebarToggleIcon,
+      expanded: {
+        src: sidebarToggleIcon,
+      },
+      collapsed: {
+        src: sidebarCollapsedIcon,
+      },
     },
     home: {
       src: homeIcon,
@@ -53,6 +64,9 @@ export const homeShellAssets: {
     },
     activeJobs: {
       src: penToolIcon,
+    },
+    downloads: {
+      src: downloadIcon,
     },
     sampleProject: {
       src: noteIcon,

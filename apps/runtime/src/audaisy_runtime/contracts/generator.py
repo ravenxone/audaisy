@@ -8,6 +8,7 @@ from pathlib import Path
 from audaisy_runtime.app import create_app
 from audaisy_runtime.contracts.models import (
     ApiErrorCode,
+    ImportFormat,
     ImportState,
     ModelInstallErrorCode,
     ModelInstallState,
@@ -27,6 +28,7 @@ def _render_typescript_contracts(settings: Settings) -> str:
         export declare const CONTRACT_VERSION: "{settings.contract_version}";
 
         export type ApiErrorCode = {_render_union(ApiErrorCode)};
+        export type ImportFormat = {_render_union(ImportFormat)};
         export type RuntimeBlockingIssueCode = {_render_union(RuntimeBlockingIssueCode)};
         export type ModelInstallErrorCode = {_render_union(ModelInstallErrorCode)};
         export type ModelTier = {_render_union(ModelTier)};
@@ -92,6 +94,7 @@ def _render_typescript_contracts(settings: Settings) -> str:
           minimumDiskFreeBytes: number;
           blockingIssues: RuntimeBlockingIssue[];
           modelInstall: ModelInstallStatus;
+          supportedImportFormats: ImportFormat[];
         }};
 
         export type StartModelDownloadRequest = {{

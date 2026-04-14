@@ -16,8 +16,5 @@ describe("Home screen", () => {
     expect(screen.getByRole("heading", { name: "Upload a file" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Check the imported text" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Generate audio and share!" })).toBeInTheDocument();
-    expect(screen.queryByText("Library")).not.toBeInTheDocument();
-    expect(screen.queryByText("Bring in a manuscript draft and let Audaisy prepare the first project workspace for it.")).not.toBeInTheDocument();
-    expect(screen.queryByText("01")).not.toBeInTheDocument();
   });
 });

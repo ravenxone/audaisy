@@ -82,6 +82,11 @@ class ProjectRepository:
             connection.commit()
             return connection.execute("SELECT * FROM projects WHERE id = ?", (project_id,)).fetchone()
 
+    def delete(self, project_id: str) -> None:
+        with self._database.connect() as connection:
+            connection.execute("DELETE FROM projects WHERE id = ?", (project_id,))
+            connection.commit()
+
     def touch_last_opened(self, project_id: str, timestamp: str) -> Row:
         with self._database.connect() as connection:
             connection.execute(
@@ -115,4 +120,3 @@ class ProjectRepository:
                 """,
                 (project_id,),
             ).fetchall()
-

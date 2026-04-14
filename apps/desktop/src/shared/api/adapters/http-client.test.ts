@@ -1,4 +1,10 @@
-import type { CreateImportResponse, ListProjectsResponse, ProjectDetailResponse, RuntimeStatusResponse } from "@audaisy/contracts";
+import type {
+  CreateImportResponse,
+  ListProjectsResponse,
+  ProfileResponse,
+  ProjectDetailResponse,
+  RuntimeStatusResponse,
+} from "@audaisy/contracts";
 import { describe, expect, it, vi } from "vitest";
 
 import { AudaisyApiError, createHttpAudaisyClient } from "@/shared/api/adapters/http-client";
@@ -31,7 +37,7 @@ describe("createHttpAudaisyClient", () => {
         },
       ],
       modelInstall: {
-        state: "unavailable",
+        state: "not_installed",
         requestedTier: null,
         resolvedTier: null,
         manifestVersion: null,
@@ -39,9 +45,10 @@ describe("createHttpAudaisyClient", () => {
         bytesDownloaded: null,
         totalBytes: null,
         updatedAt: null,
-        lastErrorCode: "MODEL_DOWNLOAD_UNAVAILABLE",
-        lastErrorMessage: "Model download is not implemented in this runtime slice yet.",
+        lastErrorCode: null,
+        lastErrorMessage: null,
       },
+      supportedImportFormats: [".pdf", ".txt", ".md"],
     };
     const fetchImpl = vi.fn<typeof fetch>(async () => jsonResponse(payload));
     const client = createHttpAudaisyClient({
@@ -56,6 +63,41 @@ describe("createHttpAudaisyClient", () => {
         headers: expect.objectContaining({
           Accept: "application/json",
         }),
+      }),
+    );
+  });
+
+  it("uses the canonical profile contract for get and patch", async () => {
+    const payload: ProfileResponse = {
+      id: "local",
+      name: "Raven",
+      avatarId: "sunflower-avatar",
+      hasCompletedProfileSetup: true,
+      createdAt: "2026-04-13T12:00:00.000Z",
+      updatedAt: "2026-04-13T12:05:00.000Z",
+    };
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockImplementationOnce(async () => jsonResponse(payload))
+      .mockImplementationOnce(async () => jsonResponse(payload));
+    const client = createHttpAudaisyClient({
+      baseUrl: "http://127.0.0.1:8000",
+      fetchImpl,
+    });
+
+    await expect(client.profile.get()).resolves.toEqual(payload);
+    await expect(client.profile.update({ name: "Raven", avatarId: "sunflower-avatar" })).resolves.toEqual(payload);
+
+    expect(fetchImpl).toHaveBeenNthCalledWith(
+      2,
+      "http://127.0.0.1:8000/profile",
+      expect.objectContaining({
+        method: "PATCH",
+        headers: expect.objectContaining({
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        }),
+        body: JSON.stringify({ name: "Raven", avatarId: "sunflower-avatar" }),
       }),
     );
   });
@@ -114,6 +156,25 @@ describe("createHttpAudaisyClient", () => {
     );
   });
 
+  it("deletes a project with the canonical runtime path", async () => {
+    const fetchImpl = vi.fn<typeof fetch>(async () => new Response(null, { status: 204 }));
+    const client = createHttpAudaisyClient({
+      baseUrl: "http://127.0.0.1:8000",
+      fetchImpl,
+    });
+
+    await expect(client.projects.delete("project-1")).resolves.toBeUndefined();
+    expect(fetchImpl).toHaveBeenCalledWith(
+      "http://127.0.0.1:8000/projects/project-1",
+      expect.objectContaining({
+        method: "DELETE",
+        headers: expect.objectContaining({
+          Accept: "application/json",
+        }),
+      }),
+    );
+  });
+
   it("posts multipart imports and returns the canonical import envelope", async () => {
     const payload: CreateImportResponse = {
       project: {
@@ -159,11 +220,11 @@ describe("createHttpAudaisyClient", () => {
       jsonResponse(
         {
           error: {
-            code: "MODEL_DOWNLOAD_UNAVAILABLE",
-            message: "Model download is not implemented in this runtime slice yet.",
+            code: "INVALID_REQUEST",
+            message: "Invalid request body.",
           },
         },
-        501,
+        422,
       ),
     );
     const client = createHttpAudaisyClient({
@@ -171,10 +232,10 @@ describe("createHttpAudaisyClient", () => {
       fetchImpl,
     });
 
-    await expect(client.runtime.getStatus()).rejects.toMatchObject(
-      new AudaisyApiError("Model download is not implemented in this runtime slice yet.", {
-        status: 501,
-        code: "MODEL_DOWNLOAD_UNAVAILABLE",
+    await expect(client.profile.update({ name: "Raven" })).rejects.toMatchObject(
+      new AudaisyApiError("Invalid request body.", {
+        status: 422,
+        code: "INVALID_REQUEST",
       }),
     );
   });

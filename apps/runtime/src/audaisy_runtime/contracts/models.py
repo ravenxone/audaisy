@@ -58,6 +58,12 @@ class ImportState(StrEnum):
     FAILED = "failed"
 
 
+class ImportFormat(StrEnum):
+    PDF = ".pdf"
+    TXT = ".txt"
+    MD = ".md"
+
+
 class ApiError(CamelModel):
     code: ApiErrorCode
     message: str
@@ -117,6 +123,7 @@ class RuntimeStatusResponse(CamelModel):
     minimum_disk_free_bytes: int
     blocking_issues: list[RuntimeBlockingIssue]
     model_install: ModelInstallStatus
+    supported_import_formats: list[ImportFormat]
 
 
 class StartModelDownloadRequest(CamelModel):

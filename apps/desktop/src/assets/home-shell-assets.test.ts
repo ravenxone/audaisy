@@ -3,10 +3,12 @@ import { avatarOptions, homeShellAssets } from "@/assets/home-shell-assets";
 describe("home shell assets", () => {
   it("exposes the expected manifest entries", () => {
     expect(homeShellAssets.brand.daisy).toBeTruthy();
-    expect(homeShellAssets.shell.toggle).toBeTruthy();
+    expect(homeShellAssets.shell.toggle.expanded).toBeTruthy();
+    expect(homeShellAssets.shell.toggle.collapsed).toBeTruthy();
     expect(homeShellAssets.shell.home).toBeTruthy();
     expect(homeShellAssets.shell.trash).toBeTruthy();
     expect(homeShellAssets.shell.activeJobs).toBeTruthy();
+    expect(homeShellAssets.shell.downloads).toBeTruthy();
     expect(homeShellAssets.shell.sampleProject).toBeTruthy();
     expect(homeShellAssets.shell.startSomethingNew).toBeTruthy();
     expect(homeShellAssets.shell.documentation).toBeTruthy();

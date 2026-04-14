@@ -74,3 +74,16 @@ def test_projects_are_persisted_across_runtime_restart(make_client) -> None:
     assert get_response.status_code == 200
     assert get_response.json()["title"] == "Restart Safe Book"
 
+
+def test_delete_project_removes_it_from_database_and_disk(make_client, runtime_settings) -> None:
+    with make_client() as client:
+        created_project = client.post("/projects", json={"title": "Delete Me"}).json()
+        delete_response = client.delete(f"/projects/{created_project['id']}")
+        list_response = client.get("/projects")
+        get_response = client.get(f"/projects/{created_project['id']}")
+
+    assert delete_response.status_code == 204
+    assert list_response.status_code == 200
+    assert list_response.json() == {"projects": []}
+    assert get_response.status_code == 404
+    assert not (runtime_settings.app_data_root / "projects" / created_project["id"]).exists()

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import shutil
 from uuid import uuid4
 
 from audaisy_runtime.contracts.models import (
@@ -78,6 +79,14 @@ class ProjectService:
         next_voice = payload.default_voice_preset_id if payload.default_voice_preset_id is not None else current["default_voice_preset_id"]
         self._repository.update(project_id, next_title, next_voice, utc_now())
         return self._build_project_detail(project_id, touch_last_opened=False)
+
+    def delete_project(self, project_id: str) -> None:
+        current = self._repository.get(project_id)
+        if current is None:
+            raise DomainError(ApiErrorCode.PROJECT_NOT_FOUND, "Project was not found.", 404)
+
+        self._repository.delete(project_id)
+        shutil.rmtree(self._app_paths.project_paths(project_id).root, ignore_errors=True)
 
     def build_project_detail(self, project_id: str) -> ProjectDetailResponse:
         return self._build_project_detail(project_id, touch_last_opened=False)

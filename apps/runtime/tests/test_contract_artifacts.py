@@ -29,6 +29,8 @@ def test_generated_contract_artifacts_match_repo_contract_package(runtime_settin
     assert set(runtime_download_responses) == {"501", "422"}
     assert runtime_download_responses["501"]["content"]["application/json"]["schema"]["$ref"] == "#/components/schemas/ErrorEnvelope"
     assert runtime_download_responses["422"]["content"]["application/json"]["schema"]["$ref"] == "#/components/schemas/ErrorEnvelope"
+    runtime_status_properties = generated_openapi["components"]["schemas"]["RuntimeStatusResponse"]["properties"]
+    assert runtime_status_properties["supportedImportFormats"]["items"]["$ref"] == "#/components/schemas/ImportFormat"
     for path, method in [
         ("/profile", "patch"),
         ("/projects", "post"),
@@ -41,6 +43,9 @@ def test_generated_contract_artifacts_match_repo_contract_package(runtime_settin
             == "#/components/schemas/ErrorEnvelope"
         )
     assert "StartModelDownloadResponse" not in generated_openapi["components"]["schemas"]
+    assert "ImportFormat" in generated_openapi["components"]["schemas"]
     assert "export type RuntimeBlockingIssue =" in repo_types
+    assert "export type ImportFormat =" in repo_types
     assert "export type CreateImportResponse =" in repo_types
+    assert "supportedImportFormats: ImportFormat[];" in repo_types
     assert "export type StartModelDownloadResponse =" not in repo_types

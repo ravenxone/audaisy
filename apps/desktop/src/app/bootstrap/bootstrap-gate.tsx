@@ -1,61 +1,41 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { useAudaisyClient } from "@/shared/api/client-context";
-
-type BootstrapState =
-  | { status: "loading" }
-  | { status: "error"; message: string };
-
-function needsOnboarding(modelsReady: boolean, healthy: boolean) {
-  return !healthy || !modelsReady;
-}
+import { useWorkspaceSession } from "@/app/bootstrap/workspace-session";
 
 export function BootstrapGate() {
-  const client = useAudaisyClient();
   const navigate = useNavigate();
-  const [state, setState] = useState<BootstrapState>({ status: "loading" });
+  const { state: sessionState } = useWorkspaceSession();
+  const redirectTarget =
+    sessionState.status === "ready" && sessionState.runtimeStatus.healthy
+      ? sessionState.profile.hasCompletedProfileSetup
+        ? "/home"
+        : "/onboarding"
+      : null;
 
   useEffect(() => {
-    let cancelled = false;
-
-    async function resolveBootstrap() {
-      try {
-        const runtimeStatus = await client.runtime.getStatus();
-
-        if (cancelled) {
-          return;
-        }
-
-        if (needsOnboarding(runtimeStatus.modelsReady, runtimeStatus.healthy)) {
-          navigate("/onboarding", { replace: true });
-          return;
-        }
-
-        navigate("/home", { replace: true });
-      } catch (error) {
-        if (!cancelled) {
-          setState({
-            status: "error",
-            message: error instanceof Error ? error.message : "Unable to determine startup readiness.",
-          });
-        }
-      }
+    if (redirectTarget) {
+      navigate(redirectTarget, { replace: true });
     }
+  }, [navigate, redirectTarget]);
 
-    resolveBootstrap();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [client, navigate]);
-
-  if (state.status === "error") {
+  if (sessionState.status === "error") {
     return (
       <main className="bootstrap-screen">
         <div className="status-panel">
           <h1 className="section-title">Startup issue</h1>
-          <p className="body-text">{state.message}</p>
+          <p className="body-text">{sessionState.message}</p>
+        </div>
+      </main>
+    );
+  }
+
+  if (sessionState.status === "ready" && !sessionState.runtimeStatus.healthy) {
+    return (
+      <main className="bootstrap-screen">
+        <div className="status-panel">
+          <h1 className="section-title">Startup issue</h1>
+          <p className="body-text">The local runtime did not report a healthy status.</p>
         </div>
       </main>
     );
@@ -65,7 +45,7 @@ export function BootstrapGate() {
     <main className="bootstrap-screen">
       <div className="status-panel">
         <h1 className="section-title">Checking your workspace</h1>
-        <p className="body-text">Preparing runtime readiness.</p>
+        <p className="body-text">Loading your local profile and runtime status.</p>
       </div>
     </main>
   );

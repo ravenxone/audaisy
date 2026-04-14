@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, UploadFile, status
+from fastapi import APIRouter, Depends, File, Response, UploadFile, status
 
 from audaisy_runtime.api.dependencies import get_container
 from audaisy_runtime.container import ApplicationContainer
@@ -56,6 +56,19 @@ def patch_project(
     container: Annotated[ApplicationContainer, Depends(get_container)],
 ) -> ProjectDetailResponse:
     return container.project_service.update_project(project_id, payload)
+
+
+@router.delete(
+    "/{project_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses={404: {"model": ErrorEnvelope}},
+)
+def delete_project(
+    project_id: str,
+    container: Annotated[ApplicationContainer, Depends(get_container)],
+) -> Response:
+    container.project_service.delete_project(project_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.post(

@@ -3,14 +3,14 @@ from __future__ import annotations
 import codecs
 from dataclasses import dataclass, field
 
-from audaisy_runtime.contracts.models import ApiErrorCode
+from audaisy_runtime.contracts.models import ApiErrorCode, ImportFormat
 from audaisy_runtime.errors import DomainError
 
 
 ALLOWED_IMPORT_TYPES = {
-    ".txt": "text/plain",
-    ".md": "text/markdown",
-    ".pdf": "application/pdf",
+    ImportFormat.TXT.value: "text/plain",
+    ImportFormat.MD.value: "text/markdown",
+    ImportFormat.PDF.value: "application/pdf",
 }
 
 PDF_HEADER = b"%PDF-"
@@ -82,16 +82,16 @@ class PdfImportValidationSession(ImportValidationSession):
                 "The uploaded PDF file is malformed.",
                 415,
             )
-        return ALLOWED_IMPORT_TYPES[".pdf"]
+        return ALLOWED_IMPORT_TYPES[ImportFormat.PDF.value]
 
 
 class ImportValidator:
     def create_session(self, suffix: str) -> ImportValidationSession:
-        if suffix == ".txt":
-            return TextImportValidationSession(ALLOWED_IMPORT_TYPES[".txt"])
-        if suffix == ".md":
-            return TextImportValidationSession(ALLOWED_IMPORT_TYPES[".md"])
-        if suffix == ".pdf":
+        if suffix == ImportFormat.TXT.value:
+            return TextImportValidationSession(ALLOWED_IMPORT_TYPES[ImportFormat.TXT.value])
+        if suffix == ImportFormat.MD.value:
+            return TextImportValidationSession(ALLOWED_IMPORT_TYPES[ImportFormat.MD.value])
+        if suffix == ImportFormat.PDF.value:
             return PdfImportValidationSession()
         raise DomainError(
             ApiErrorCode.UNSUPPORTED_IMPORT_TYPE,

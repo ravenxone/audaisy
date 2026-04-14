@@ -1,6 +1,8 @@
 import { useId, useMemo, useState } from "react";
-
 import type { CreateImportResponse } from "@audaisy/contracts";
+
+import cloudUploadIcon from "@/assets/icons/cloud-upload.svg";
+import styles from "@/features/uploads/upload-dropzone.module.css";
 
 type UploadDropzoneProps = {
   acceptedFormats: string[];
@@ -44,6 +46,22 @@ function getImportStatusMessage(response: CreateImportResponse) {
   }
 }
 
+function formatAcceptedFormatsForError(acceptedFormats: string[]) {
+  if (acceptedFormats.length === 0) {
+    return "supported file";
+  }
+
+  if (acceptedFormats.length === 1) {
+    return acceptedFormats[0];
+  }
+
+  if (acceptedFormats.length === 2) {
+    return `${acceptedFormats[0]} or ${acceptedFormats[1]}`;
+  }
+
+  return `${acceptedFormats.slice(0, -1).join(", ")}, or ${acceptedFormats.at(-1)}`;
+}
+
 export function UploadDropzone({ acceptedFormats, onUpload }: UploadDropzoneProps) {
   const inputId = useId();
   const [state, setState] = useState<UploadState>("idle");
@@ -51,6 +69,8 @@ export function UploadDropzone({ acceptedFormats, onUpload }: UploadDropzoneProp
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [statusTone, setStatusTone] = useState<"neutral" | "success">("neutral");
   const allowedFormats = useMemo(() => acceptedFormats.map((format) => format.toLowerCase()), [acceptedFormats]);
+  const acceptedFormatsLabel = acceptedFormats.join(", ");
+  const acceptedFormatsErrorLabel = formatAcceptedFormatsForError(acceptedFormats);
   const isUploading = state === "uploading";
 
   async function submitFile(file: File | null) {
@@ -62,7 +82,7 @@ export function UploadDropzone({ acceptedFormats, onUpload }: UploadDropzoneProp
 
     if (!allowedFormats.includes(extension)) {
       setState("error");
-      setErrorMessage("Please choose a .pdf, .txt, or .md file for this step.");
+      setErrorMessage(`Please choose a ${acceptedFormatsErrorLabel} file for this step.`);
       setStatusMessage(null);
       return;
     }
@@ -91,9 +111,9 @@ export function UploadDropzone({ acceptedFormats, onUpload }: UploadDropzoneProp
   }
 
   return (
-    <div className="upload-panel">
+    <section className={styles.frame} data-state={state} data-testid="upload-frame">
       <div
-        className="dropzone"
+        className={styles.dropzone}
         data-state={state}
         data-testid="upload-dropzone"
         onDragEnter={(event) => {
@@ -130,17 +150,20 @@ export function UploadDropzone({ acceptedFormats, onUpload }: UploadDropzoneProp
           void submitFile(event.dataTransfer.files.item(0));
         }}
       >
-        <div className="upload-icon" aria-hidden="true">
-          +
-        </div>
-        <h2 className="section-title">Upload a file to get started</h2>
-        <p className="body-text">Drag a file here or choose one from your Mac to create the first manuscript import.</p>
-        <p className="body-sm">Accepted formats: {acceptedFormats.join(", ")}</p>
+        <h2 className={styles.title}>Upload a file to get started</h2>
 
-        <label aria-disabled={isUploading} className="upload-select-button" htmlFor={inputId}>
-          Choose a file
+        <label aria-disabled={isUploading} className={styles.innerCard} htmlFor={inputId}>
+          <img alt="" aria-hidden="true" className={styles.cloudIcon} src={cloudUploadIcon} />
+          <span className={styles.innerCopy}>Click here or drop the file to start uploading</span>
         </label>
+
+        <div className={styles.acceptedFormats}>
+          <p className={styles.acceptedFormatsLabel}>Accepted formats</p>
+          <p className={styles.acceptedFormatsValue}>{acceptedFormatsLabel}</p>
+        </div>
+
         <input
+          accept={acceptedFormats.join(",")}
           aria-label="Upload manuscript file"
           className="visually-hidden"
           disabled={isUploading}
@@ -152,16 +175,20 @@ export function UploadDropzone({ acceptedFormats, onUpload }: UploadDropzoneProp
           type="file"
         />
 
-        {isUploading ? <p className="body-sm status-inline">Uploading file...</p> : null}
-        {errorMessage ? (
-          <p className="body-sm status-inline status-error" role="alert">
-            {errorMessage}
-          </p>
-        ) : null}
-        {statusMessage ? (
-          <p className={`body-sm status-inline ${statusTone === "success" ? "status-success" : ""}`}>{statusMessage}</p>
-        ) : null}
+        <div className={styles.statusArea}>
+          {isUploading ? <p className={styles.statusMessage}>Uploading file...</p> : null}
+          {errorMessage ? (
+            <p className={`${styles.statusMessage} ${styles.statusError}`} role="alert">
+              {errorMessage}
+            </p>
+          ) : null}
+          {statusMessage ? (
+            <p className={`${styles.statusMessage} ${statusTone === "success" ? styles.statusSuccess : ""}`}>
+              {statusMessage}
+            </p>
+          ) : null}
+        </div>
       </div>
-    </div>
+    </section>
   );
 }

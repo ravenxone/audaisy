@@ -1,8 +1,7 @@
-import { Outlet, Route, Routes } from "react-router-dom";
+import { Navigate, Outlet, Route, Routes } from "react-router-dom";
 
 import { BootstrapGate } from "@/app/bootstrap/bootstrap-gate";
-import { TemporaryLocalBootstrapProvider } from "@/app/bootstrap/temporary-local-bootstrap-provider";
-import type { TemporaryLocalBootstrapSupport } from "@/app/bootstrap/temporary-local-bootstrap";
+import { WorkspaceSessionProvider } from "@/app/bootstrap/workspace-session";
 import { AppShellLayout } from "@/features/app-shell/shell-layout";
 import { HomeRoute } from "@/features/home/home-route";
 import { OnboardingRoute } from "@/features/onboarding/onboarding-route";
@@ -12,32 +11,29 @@ import { AudaisyClientProvider } from "@/shared/api/client-context";
 
 type AppDependencies = {
   client: AudaisyClient;
-  temporaryLocalBootstrapSupport: TemporaryLocalBootstrapSupport;
 };
 
-function AppProviders({ client, temporaryLocalBootstrapSupport }: AppDependencies) {
+function AppProviders({ client }: AppDependencies) {
   return (
     <AudaisyClientProvider client={client}>
-      <TemporaryLocalBootstrapProvider support={temporaryLocalBootstrapSupport}>
+      <WorkspaceSessionProvider>
         <Outlet />
-      </TemporaryLocalBootstrapProvider>
+      </WorkspaceSessionProvider>
     </AudaisyClientProvider>
   );
 }
 
-export function createAppRoutes({ client, temporaryLocalBootstrapSupport }: AppDependencies) {
+export function createAppRoutes({ client }: AppDependencies) {
   return (
     <Routes>
-      <Route
-        element={<AppProviders client={client} temporaryLocalBootstrapSupport={temporaryLocalBootstrapSupport} />}
-        path="/"
-      >
+      <Route element={<AppProviders client={client} />} path="/">
         <Route element={<BootstrapGate />} index />
         <Route element={<OnboardingRoute />} path="onboarding" />
         <Route element={<AppShellLayout />}>
           <Route element={<HomeRoute />} path="home" />
           <Route element={<ProjectRoute />} path="projects/:projectId" />
         </Route>
+        <Route element={<Navigate replace to="/home" />} path="*" />
       </Route>
     </Routes>
   );
