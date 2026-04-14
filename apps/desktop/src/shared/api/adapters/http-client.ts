@@ -1,5 +1,6 @@
 import type {
   ApiErrorCode,
+  ChapterDetailResponse,
   CreateImportResponse,
   CreateProjectRequest,
   ErrorEnvelope,
@@ -8,6 +9,7 @@ import type {
   ProfileResponse,
   ProjectDetailResponse,
   RuntimeStatusResponse,
+  UpdateChapterRequest,
 } from "@audaisy/contracts";
 
 import type { AudaisyClient } from "@/shared/api/client";
@@ -123,6 +125,25 @@ export function createHttpAudaisyClient(options: HttpAudaisyClientOptions): Auda
         }),
       get: (projectId) =>
         requestJson<ProjectDetailResponse>(fetchImpl, options.baseUrl, `/projects/${encodeURIComponent(projectId)}`),
+      getChapter: (projectId, chapterId) =>
+        requestJson<ChapterDetailResponse>(
+          fetchImpl,
+          options.baseUrl,
+          `/projects/${encodeURIComponent(projectId)}/chapters/${encodeURIComponent(chapterId)}`,
+        ),
+      updateChapter: (projectId, chapterId, input) =>
+        requestJson<ChapterDetailResponse>(
+          fetchImpl,
+          options.baseUrl,
+          `/projects/${encodeURIComponent(projectId)}/chapters/${encodeURIComponent(chapterId)}`,
+          {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(input satisfies UpdateChapterRequest),
+          },
+        ),
       delete: (projectId) =>
         requestVoid(fetchImpl, options.baseUrl, `/projects/${encodeURIComponent(projectId)}`, {
           method: "DELETE",

@@ -62,6 +62,10 @@ class DocumentRecordRepository:
             connection.commit()
             return connection.execute("SELECT * FROM document_records WHERE id = ?", (record_id,)).fetchone()
 
+    def get(self, record_id: str) -> Row | None:
+        with self._database.connect() as connection:
+            return connection.execute("SELECT * FROM document_records WHERE id = ?", (record_id,)).fetchone()
+
     def list_by_project(self, project_id: str) -> list[Row]:
         with self._database.connect() as connection:
             return connection.execute(
@@ -83,3 +87,66 @@ class DocumentRecordRepository:
                 (project_id,),
             ).fetchall()
 
+    def list_incomplete(self) -> list[Row]:
+        with self._database.connect() as connection:
+            return connection.execute(
+                """
+                SELECT *
+                FROM document_records
+                WHERE state IN ('stored', 'processing')
+                ORDER BY created_at ASC
+                """
+            ).fetchall()
+
+    def mark_processing(self, record_id: str, updated_at: str) -> Row:
+        with self._database.connect() as connection:
+            connection.execute(
+                """
+                UPDATE document_records
+                SET state = 'processing', updated_at = ?, failure_message = NULL
+                WHERE id = ?
+                """,
+                (updated_at, record_id),
+            )
+            connection.commit()
+            return connection.execute("SELECT * FROM document_records WHERE id = ?", (record_id,)).fetchone()
+
+    def mark_completed(
+        self,
+        record_id: str,
+        *,
+        canonical_json_path: str,
+        markdown_projection_path: str,
+        confidence: str,
+        updated_at: str,
+    ) -> Row:
+        with self._database.connect() as connection:
+            connection.execute(
+                """
+                UPDATE document_records
+                SET
+                  state = 'completed',
+                  canonical_json_path = ?,
+                  markdown_projection_path = ?,
+                  confidence = ?,
+                  updated_at = ?,
+                  failure_message = NULL
+                WHERE id = ?
+                """,
+                (canonical_json_path, markdown_projection_path, confidence, updated_at, record_id),
+            )
+            connection.commit()
+            return connection.execute("SELECT * FROM document_records WHERE id = ?", (record_id,)).fetchone()
+
+    def mark_failed(self, record_id: str, *, failure_message: str, updated_at: str) -> Row:
+        with self._database.connect() as connection:
+            connection.execute(
+                """
+                UPDATE document_records
+                SET state = 'failed', failure_message = ?, updated_at = ?
+                WHERE id = ?
+                """,
+                (failure_message, updated_at, record_id),
+            )
+            connection.commit()
+            return connection.execute("SELECT * FROM document_records WHERE id = ?", (record_id,)).fetchone()

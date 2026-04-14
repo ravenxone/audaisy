@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, Response, UploadFile, status
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Response, UploadFile, status
 
 from audaisy_runtime.api.dependencies import get_container
 from audaisy_runtime.container import ApplicationContainer
@@ -83,7 +83,10 @@ def delete_project(
 )
 async def import_project_file(
     project_id: str,
+    background_tasks: BackgroundTasks,
     container: Annotated[ApplicationContainer, Depends(get_container)],
     file: UploadFile = File(...),
 ) -> CreateImportResponse:
-    return await container.import_service.import_file(project_id, file)
+    response = await container.import_service.import_file(project_id, file)
+    background_tasks.add_task(container.import_service.process_import, project_id, response.import_.id)
+    return response

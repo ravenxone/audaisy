@@ -69,11 +69,6 @@ class RuntimeStatusService:
                 "Installed model assets failed verification.",
             )
 
-        if install_status.last_error_code == ModelInstallErrorCode.MODEL_DOWNLOAD_UNAVAILABLE:
-            add_issue(
-                RuntimeBlockingIssueCode.MODEL_DOWNLOAD_UNAVAILABLE,
-                install_status.last_error_message or "Model download is not currently available.",
-            )
         if not disk_status.ready:
             add_issue(
                 RuntimeBlockingIssueCode.DISK_SPACE_LOW,

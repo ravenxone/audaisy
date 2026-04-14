@@ -15,11 +15,19 @@ class Database:
         self._db_path.parent.mkdir(parents=True, exist_ok=True)
         with self.connect() as connection:
             current_version = connection.execute("PRAGMA user_version").fetchone()[0]
-            if current_version >= 1:
-                return
-            migration = resources.files("audaisy_runtime.persistence.migrations").joinpath("0001_initial.sql").read_text()
-            connection.executescript(migration)
-            connection.execute("PRAGMA user_version = 1")
+            migration_files = sorted(
+                file
+                for file in resources.files("audaisy_runtime.persistence.migrations").iterdir()
+                if file.name.endswith(".sql")
+            )
+
+            for migration_file in migration_files:
+                version = int(migration_file.name.split("_", 1)[0])
+                if version <= current_version:
+                    continue
+                connection.executescript(migration_file.read_text())
+                connection.execute(f"PRAGMA user_version = {version}")
+
             connection.commit()
 
     @contextmanager
@@ -31,4 +39,3 @@ class Database:
             yield connection
         finally:
             connection.close()
-

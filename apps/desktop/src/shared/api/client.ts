@@ -1,4 +1,5 @@
 import type {
+  ChapterDetailResponse,
   CreateImportResponse,
   CreateProjectRequest,
   ListProjectsResponse,
@@ -6,6 +7,7 @@ import type {
   ProfileResponse,
   ProjectDetailResponse,
   RuntimeStatusResponse,
+  UpdateChapterRequest,
 } from "@audaisy/contracts";
 
 export type AudaisyClient = {
@@ -20,6 +22,12 @@ export type AudaisyClient = {
     list: () => Promise<ListProjectsResponse["projects"]>;
     create: (input: CreateProjectRequest) => Promise<ProjectDetailResponse>;
     get: (projectId: string) => Promise<ProjectDetailResponse>;
+    getChapter: (projectId: string, chapterId: string) => Promise<ChapterDetailResponse>;
+    updateChapter: (
+      projectId: string,
+      chapterId: string,
+      input: UpdateChapterRequest,
+    ) => Promise<ChapterDetailResponse>;
     delete: (projectId: string) => Promise<void>;
     importFile: (projectId: string, file: File) => Promise<CreateImportResponse>;
   };

@@ -1,4 +1,5 @@
 import type {
+  ChapterDetailResponse,
   CreateImportResponse,
   ListProjectsResponse,
   ProfileResponse,
@@ -48,7 +49,7 @@ describe("createHttpAudaisyClient", () => {
         lastErrorCode: null,
         lastErrorMessage: null,
       },
-      supportedImportFormats: [".pdf", ".txt", ".md"],
+      supportedImportFormats: [".txt", ".md"],
     };
     const fetchImpl = vi.fn<typeof fetch>(async () => jsonResponse(payload));
     const client = createHttpAudaisyClient({
@@ -213,6 +214,70 @@ describe("createHttpAudaisyClient", () => {
     expect(request?.body).toBeInstanceOf(FormData);
     const sentFile = (request?.body as FormData).get("file");
     expect(sentFile).toBe(file);
+  });
+
+  it("gets and patches chapter content with the canonical nested project routes", async () => {
+    const chapterPayload: ChapterDetailResponse = {
+      id: "chapter-1",
+      projectId: "project-1",
+      title: "Chapter One",
+      order: 1,
+      revision: 2,
+      editorDoc: {
+        type: "doc",
+        content: [
+          {
+            type: "paragraph",
+            attrs: { blockId: "paragraph-1" },
+            content: [{ type: "text", text: "Hello world" }],
+          },
+        ],
+      },
+      markdown: "Hello world\n",
+      warnings: [],
+      sourceDocumentRecordId: "import-1",
+      createdAt: "2026-04-13T12:00:00.000Z",
+      updatedAt: "2026-04-13T12:05:00.000Z",
+    };
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockImplementationOnce(async () => jsonResponse(chapterPayload))
+      .mockImplementationOnce(async () => jsonResponse(chapterPayload));
+    const client = createHttpAudaisyClient({
+      baseUrl: "http://127.0.0.1:8000",
+      fetchImpl,
+    });
+
+    await expect(client.projects.getChapter("project-1", "chapter-1")).resolves.toEqual(chapterPayload);
+    await expect(
+      client.projects.updateChapter("project-1", "chapter-1", {
+        editorDoc: chapterPayload.editorDoc,
+      }),
+    ).resolves.toEqual(chapterPayload);
+
+    expect(fetchImpl).toHaveBeenNthCalledWith(
+      1,
+      "http://127.0.0.1:8000/projects/project-1/chapters/chapter-1",
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Accept: "application/json",
+        }),
+      }),
+    );
+    expect(fetchImpl).toHaveBeenNthCalledWith(
+      2,
+      "http://127.0.0.1:8000/projects/project-1/chapters/chapter-1",
+      expect.objectContaining({
+        method: "PATCH",
+        headers: expect.objectContaining({
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        }),
+        body: JSON.stringify({
+          editorDoc: chapterPayload.editorDoc,
+        }),
+      }),
+    );
   });
 
   it("throws a typed API error for non-2xx responses", async () => {

@@ -10,6 +10,6 @@ export function createDeferred<T>() {
   return { promise, resolve, reject };
 }
 
-export function createFile(name: string, type: string) {
-  return new File(["stub"], name, { type });
+export function createFile(name: string, type: string, contents = "stub") {
+  return new File([contents], name, { type });
 }

@@ -1,4 +1,4 @@
-import { act, fireEvent, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { CreateImportResponse, ProjectDetailResponse } from "@audaisy/contracts";
 
@@ -57,7 +57,7 @@ describe("Upload screen", () => {
     expect(screen.getByRole("heading", { name: "Upload a file to get started" })).toBeInTheDocument();
     expect(screen.getByText("Click here or drop the file to start uploading")).toBeInTheDocument();
     expect(screen.getByText("Accepted formats")).toBeInTheDocument();
-    expect(screen.getByText(".pdf, .txt, .md")).toBeInTheDocument();
+    expect(screen.getByText(".txt, .md")).toBeInTheDocument();
     expect(screen.getByText("Downloads")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Your first Project" })).toHaveAttribute("aria-current", "page");
     expect(screen.getByTestId("upload-frame")).toBeInTheDocument();
@@ -68,15 +68,31 @@ describe("Upload screen", () => {
 
     renderApp({ client, initialEntries: ["/projects/your-first-project"] });
 
-    const dropzone = await screen.findByTestId("upload-dropzone");
-    fireEvent.dragEnter(dropzone, {
+    const frame = await screen.findByTestId("upload-frame");
+    const innerCard = screen.getByText("Click here or drop the file to start uploading").closest("label");
+    fireEvent.dragEnter(frame, {
       dataTransfer: { files: createFileList([createFile("chapter.txt", "text/plain")]) },
     });
 
-    expect(dropzone).toHaveAttribute("data-state", "drag-over");
+    expect(frame).toHaveAttribute("data-state", "drag-over");
 
-    fireEvent.dragLeave(dropzone);
-    expect(dropzone).toHaveAttribute("data-state", "idle");
+    if (!innerCard) {
+      throw new Error("Expected the upload card label to be rendered.");
+    }
+
+    fireEvent.dragEnter(innerCard, {
+      dataTransfer: { files: createFileList([createFile("chapter.txt", "text/plain")]) },
+    });
+    fireEvent.dragLeave(innerCard, {
+      dataTransfer: { files: createFileList([createFile("chapter.txt", "text/plain")]) },
+    });
+
+    expect(frame).toHaveAttribute("data-state", "drag-over");
+
+    fireEvent.dragLeave(frame, {
+      dataTransfer: { files: createFileList([createFile("chapter.txt", "text/plain")]) },
+    });
+    expect(frame).toHaveAttribute("data-state", "idle");
   });
 
   it("shows a UX error for an invalid file type", async () => {
@@ -84,8 +100,8 @@ describe("Upload screen", () => {
 
     renderApp({ client, initialEntries: ["/projects/your-first-project"] });
 
-    const dropzone = await screen.findByTestId("upload-dropzone");
-    fireEvent.drop(dropzone, {
+    const frame = await screen.findByTestId("upload-frame");
+    fireEvent.drop(frame, {
       dataTransfer: {
         files: createFileList([
           createFile("chapter.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
@@ -93,9 +109,7 @@ describe("Upload screen", () => {
       },
     });
 
-    expect(
-      await screen.findByText("Please choose a .pdf, .txt, or .md file for this step."),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("Please choose a .txt or .md file for this step.")).toBeInTheDocument();
   });
 
   it("switches to a different project when another project is clicked in the navbar", async () => {
@@ -108,7 +122,8 @@ describe("Upload screen", () => {
 
     await user.click(screen.getByRole("link", { name: "Sample Project" }));
 
-    expect(await screen.findByRole("heading", { name: "Sample Project" })).toBeInTheDocument();
+    const toolbar = await screen.findByTestId("manuscript-toolbar");
+    expect(within(toolbar).getByText("Sample Project")).toBeInTheDocument();
     expect(window.location.pathname).toBe("/projects/sample-project");
     expect(screen.getByRole("link", { name: "Sample Project" })).toHaveAttribute("aria-current", "page");
     expect(screen.getByRole("link", { name: "Your first Project" })).not.toHaveAttribute("aria-current");
@@ -178,9 +193,7 @@ describe("Upload screen", () => {
       await deferred.promise;
     });
 
-    expect(
-      await screen.findByText("Stored chapter.txt safely for import processing."),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("Stored chapter.txt safely. Import processing will continue before editing is ready.")).toBeInTheDocument();
   });
 
   it("does not trigger upload twice while pending", async () => {
@@ -194,10 +207,10 @@ describe("Upload screen", () => {
     renderApp({ client, initialEntries: ["/projects/your-first-project"] });
 
     const input = await screen.findByLabelText("Upload manuscript file");
-    const dropzone = screen.getByTestId("upload-dropzone");
+    const frame = screen.getByTestId("upload-frame");
 
     await user.upload(input, createFile("chapter.txt", "text/plain"));
-    fireEvent.drop(dropzone, {
+    fireEvent.drop(frame, {
       dataTransfer: { files: createFileList([createFile("chapter-again.txt", "text/plain")]) },
     });
 
@@ -221,7 +234,41 @@ describe("Upload screen", () => {
       await deferred.promise;
     });
 
-    expect(await screen.findByText("Processing chapter.txt.")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Processing chapter.txt. The manuscript will open when chapter content is ready."),
+    ).toBeInTheDocument();
+  });
+
+  it("accepts a valid file drop anywhere in the upload stage", async () => {
+    const client = createInMemoryAudaisyClient({
+      initialProjects: SEEDED_PROJECTS,
+      importFileImpl: async () => ({
+        project: SEEDED_PROJECTS[1],
+        import: {
+          id: "import-1",
+          state: "stored",
+          sourceFileName: "chapter.txt",
+          sourceMimeType: "text/plain",
+          sourceSha256: "sha256-import-1",
+          fileSizeBytes: 12,
+          createdAt: "2026-04-13T12:00:00.000Z",
+          updatedAt: "2026-04-13T12:00:00.000Z",
+          failureMessage: null,
+        },
+      }),
+    });
+
+    renderApp({ client, initialEntries: ["/projects/your-first-project"] });
+
+    const frame = await screen.findByTestId("upload-frame");
+    fireEvent.drop(frame, {
+      dataTransfer: { files: createFileList([createFile("chapter.txt", "text/plain")]) },
+    });
+
+    expect(client.calls.importFile).toBe(1);
+    expect(
+      await screen.findByText("Stored chapter.txt safely. Import processing will continue before editing is ready."),
+    ).toBeInTheDocument();
   });
 
   it("shows an upload error when the import fails", async () => {

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from contextlib import asynccontextmanager
+import asyncio
+from contextlib import asynccontextmanager, suppress
 from pathlib import Path
 
 from fastapi import FastAPI, Request
@@ -30,7 +31,20 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def lifespan(_: FastAPI):
         container.app_paths.ensure_base_layout()
         container.database.initialize()
-        yield
+        container.model_manager.reconcile_install_state()
+        recovery_task = asyncio.create_task(_resume_incomplete_imports())
+        try:
+            yield
+        finally:
+            recovery_task.cancel()
+            with suppress(asyncio.CancelledError):
+                await recovery_task
+
+    async def _resume_incomplete_imports() -> None:
+        try:
+            await asyncio.to_thread(container.import_service.resume_incomplete_imports)
+        except Exception:
+            return
 
     app = FastAPI(title="Audaisy Runtime", version=resolved_settings.runtime_version, lifespan=lifespan)
     app.state.container = container

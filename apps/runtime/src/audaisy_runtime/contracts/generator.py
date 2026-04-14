@@ -13,6 +13,7 @@ from audaisy_runtime.contracts.models import (
     ModelInstallErrorCode,
     ModelInstallState,
     ModelTier,
+    StartModelDownloadResult,
     RuntimeBlockingIssueCode,
 )
 from audaisy_runtime.settings import Settings
@@ -33,6 +34,7 @@ def _render_typescript_contracts(settings: Settings) -> str:
         export type ModelInstallErrorCode = {_render_union(ModelInstallErrorCode)};
         export type ModelTier = {_render_union(ModelTier)};
         export type ModelInstallState = {_render_union(ModelInstallState)};
+        export type StartModelDownloadResult = {_render_union(StartModelDownloadResult)};
         export type ImportState = {_render_union(ImportState)};
 
         export type ApiError = {{
@@ -101,11 +103,51 @@ def _render_typescript_contracts(settings: Settings) -> str:
           requestedTier?: ModelTier | null;
         }};
 
+        export type StartModelDownloadResponse = {{
+          result: StartModelDownloadResult;
+          modelInstall: ModelInstallStatus;
+        }};
+
+        export type ProseMirrorNode = {{
+          type: string;
+          attrs?: Record<string, unknown>;
+          content?: ProseMirrorNode[];
+          text?: string;
+        }};
+
+        export type ImportWarning = {{
+          id: string;
+          code: string;
+          severity: string;
+          message: string;
+          sourcePage?: number | null;
+          blockId?: string | null;
+        }};
+
         export type ChapterSummary = {{
           id: string;
           title: string;
           order: number;
           warningCount: number;
+          sourceDocumentRecordId?: string | null;
+        }};
+
+        export type ChapterDetailResponse = {{
+          id: string;
+          projectId: string;
+          title: string;
+          order: number;
+          revision: number;
+          editorDoc: ProseMirrorNode;
+          markdown: string;
+          warnings: ImportWarning[];
+          sourceDocumentRecordId?: string | null;
+          createdAt: string;
+          updatedAt: string;
+        }};
+
+        export type UpdateChapterRequest = {{
+          editorDoc: ProseMirrorNode;
         }};
 
         export type ProjectCard = {{

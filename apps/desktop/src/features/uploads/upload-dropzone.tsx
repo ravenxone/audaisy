@@ -1,4 +1,4 @@
-import { useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { CreateImportResponse } from "@audaisy/contracts";
 
 import cloudUploadIcon from "@/assets/icons/cloud-upload.svg";
@@ -10,6 +10,24 @@ type UploadDropzoneProps = {
 };
 
 type UploadState = "idle" | "drag-over" | "uploading" | "error";
+
+function hasDraggedFiles(dataTransfer: DataTransfer | null | undefined) {
+  if (!dataTransfer) {
+    return false;
+  }
+
+  const types = dataTransfer.types ? Array.from(dataTransfer.types) : [];
+  if (types.includes("Files")) {
+    return true;
+  }
+
+  const items = dataTransfer.items ? Array.from(dataTransfer.items) : [];
+  if (items.length > 0) {
+    return items.some((item) => item.kind === "file");
+  }
+
+  return Boolean(dataTransfer.files?.length);
+}
 
 function getFileExtension(name: string) {
   const index = name.lastIndexOf(".");
@@ -26,17 +44,17 @@ function getImportStatusMessage(response: CreateImportResponse) {
     case "stored":
       return {
         tone: "neutral" as const,
-        message: `Stored ${response.import.sourceFileName} safely for import processing.`,
+        message: `Stored ${response.import.sourceFileName} safely. Import processing will continue before editing is ready.`,
       };
     case "processing":
       return {
         tone: "neutral" as const,
-        message: `Processing ${response.import.sourceFileName}.`,
+        message: `Processing ${response.import.sourceFileName}. The manuscript will open when chapter content is ready.`,
       };
     case "completed":
       return {
         tone: "success" as const,
-        message: `Import completed for ${response.import.sourceFileName}.`,
+        message: `Import completed for ${response.import.sourceFileName}. Opening the manuscript workspace.`,
       };
     case "failed":
       return {
@@ -68,10 +86,45 @@ export function UploadDropzone({ acceptedFormats, onUpload }: UploadDropzoneProp
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [statusTone, setStatusTone] = useState<"neutral" | "success">("neutral");
+  const dragDepthRef = useRef(0);
   const allowedFormats = useMemo(() => acceptedFormats.map((format) => format.toLowerCase()), [acceptedFormats]);
   const acceptedFormatsLabel = acceptedFormats.join(", ");
   const acceptedFormatsErrorLabel = formatAcceptedFormatsForError(acceptedFormats);
   const isUploading = state === "uploading";
+
+  useEffect(() => {
+    function preventWindowFileDrop(event: DragEvent) {
+      if (!hasDraggedFiles(event.dataTransfer)) {
+        return;
+      }
+
+      event.preventDefault();
+      if (event.type === "dragover" && event.dataTransfer) {
+        event.dataTransfer.dropEffect = "copy";
+      }
+    }
+
+    window.addEventListener("dragover", preventWindowFileDrop);
+    window.addEventListener("drop", preventWindowFileDrop);
+
+    return () => {
+      window.removeEventListener("dragover", preventWindowFileDrop);
+      window.removeEventListener("drop", preventWindowFileDrop);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isUploading) {
+      return;
+    }
+
+    dragDepthRef.current = 0;
+  }, [isUploading]);
+
+  function resetDragState(nextState: UploadState = "idle") {
+    dragDepthRef.current = 0;
+    setState(nextState);
+  }
 
   async function submitFile(file: File | null) {
     if (!file || isUploading) {
@@ -81,7 +134,7 @@ export function UploadDropzone({ acceptedFormats, onUpload }: UploadDropzoneProp
     const extension = getFileExtension(file.name);
 
     if (!allowedFormats.includes(extension)) {
-      setState("error");
+      resetDragState("error");
       setErrorMessage(`Please choose a ${acceptedFormatsErrorLabel} file for this step.`);
       setStatusMessage(null);
       return;
@@ -96,59 +149,81 @@ export function UploadDropzone({ acceptedFormats, onUpload }: UploadDropzoneProp
       const nextMessage = getImportStatusMessage(response);
 
       if (nextMessage.tone === "error") {
-        setState("error");
+        resetDragState("error");
         setErrorMessage(nextMessage.message);
         return;
       }
 
-      setState("idle");
+      resetDragState("idle");
       setStatusTone(nextMessage.tone);
       setStatusMessage(nextMessage.message);
     } catch {
-      setState("error");
+      resetDragState("error");
       setErrorMessage("Import failed. Please try another file or retry.");
     }
   }
 
   return (
-    <section className={styles.frame} data-state={state} data-testid="upload-frame">
+    <section
+      className={styles.frame}
+      data-state={state}
+      data-testid="upload-frame"
+      onDragEnter={(event) => {
+        if (!hasDraggedFiles(event.dataTransfer)) {
+          return;
+        }
+
+        event.preventDefault();
+        if (isUploading) {
+          return;
+        }
+
+        dragDepthRef.current += 1;
+        setState("drag-over");
+      }}
+      onDragLeave={(event) => {
+        event.preventDefault();
+        if (isUploading || dragDepthRef.current === 0) {
+          return;
+        }
+
+        dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+        if (dragDepthRef.current === 0) {
+          setState("idle");
+        }
+      }}
+      onDragOver={(event) => {
+        if (!hasDraggedFiles(event.dataTransfer)) {
+          return;
+        }
+
+        event.preventDefault();
+        if (event.dataTransfer) {
+          event.dataTransfer.dropEffect = "copy";
+        }
+        if (isUploading) {
+          return;
+        }
+
+        setState("drag-over");
+      }}
+      onDrop={(event) => {
+        event.preventDefault();
+        const droppedFile = hasDraggedFiles(event.dataTransfer) ? event.dataTransfer.files.item(0) : null;
+
+        if (isUploading) {
+          dragDepthRef.current = 0;
+          return;
+        }
+
+        resetDragState("idle");
+        void submitFile(droppedFile);
+      }}
+    >
       <div
         className={styles.dropzone}
         data-state={state}
         data-testid="upload-dropzone"
-        onDragEnter={(event) => {
-          event.preventDefault();
-
-          if (isUploading) {
-            return;
-          }
-          setState("drag-over");
-        }}
-        onDragLeave={(event) => {
-          event.preventDefault();
-
-          if (isUploading) {
-            return;
-          }
-          setState("idle");
-        }}
-        onDragOver={(event) => {
-          event.preventDefault();
-
-          if (isUploading) {
-            return;
-          }
-          setState("drag-over");
-        }}
-        onDrop={(event) => {
-          event.preventDefault();
-
-          if (isUploading) {
-            return;
-          }
-          setState("idle");
-          void submitFile(event.dataTransfer.files.item(0));
-        }}
       >
         <h2 className={styles.title}>Upload a file to get started</h2>
 

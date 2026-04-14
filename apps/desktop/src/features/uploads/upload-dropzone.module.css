@@ -11,6 +11,7 @@
 
 .frame[data-state="drag-over"] {
   border-color: rgba(109, 87, 0, 0.84);
+  background: rgba(255, 204, 0, 0.04);
 }
 
 .dropzone {

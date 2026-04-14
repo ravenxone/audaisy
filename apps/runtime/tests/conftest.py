@@ -45,6 +45,13 @@ def make_client(runtime_settings) -> Callable[[], Iterator["TestClient"]]:
 
 
 @pytest.fixture()
+def make_app(runtime_settings):
+    from audaisy_runtime.app import create_app
+
+    return create_app(runtime_settings)
+
+
+@pytest.fixture()
 def make_client_for_settings() -> Callable[[object], Iterator["TestClient"]]:
     from fastapi.testclient import TestClient
     from audaisy_runtime.app import create_app

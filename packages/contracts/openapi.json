@@ -23,9 +23,15 @@
         "enum": [
           "INVALID_REQUEST",
           "PROJECT_NOT_FOUND",
+          "CHAPTER_NOT_FOUND",
           "UNSUPPORTED_IMPORT_TYPE",
           "MALFORMED_IMPORT",
-          "MODEL_DOWNLOAD_UNAVAILABLE"
+          "MODEL_HARDWARE_UNSUPPORTED",
+          "MODEL_DISK_SPACE_LOW",
+          "MODEL_MANIFEST_FETCH_FAILED",
+          "MODEL_MANIFEST_INVALID",
+          "MODEL_DOWNLOAD_FAILED",
+          "MODEL_CHECKSUM_MISMATCH"
         ],
         "title": "ApiErrorCode",
         "type": "string"
@@ -44,6 +50,78 @@
         "title": "Body_import_project_file_projects__project_id__imports_post",
         "type": "object"
       },
+      "ChapterDetailResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "createdAt": {
+            "title": "Createdat",
+            "type": "string"
+          },
+          "editorDoc": {
+            "$ref": "#/components/schemas/ProseMirrorNode-Output"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "markdown": {
+            "title": "Markdown",
+            "type": "string"
+          },
+          "order": {
+            "title": "Order",
+            "type": "integer"
+          },
+          "projectId": {
+            "title": "Projectid",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "sourceDocumentRecordId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sourcedocumentrecordid"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "updatedAt": {
+            "title": "Updatedat",
+            "type": "string"
+          },
+          "warnings": {
+            "items": {
+              "$ref": "#/components/schemas/ImportWarning"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "title",
+          "order",
+          "revision",
+          "editorDoc",
+          "markdown",
+          "warnings",
+          "createdAt",
+          "updatedAt"
+        ],
+        "title": "ChapterDetailResponse",
+        "type": "object"
+      },
       "ChapterSummary": {
         "additionalProperties": false,
         "properties": {
@@ -54,6 +132,17 @@
           "order": {
             "title": "Order",
             "type": "integer"
+          },
+          "sourceDocumentRecordId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sourcedocumentrecordid"
           },
           "title": {
             "title": "Title",
@@ -156,7 +245,6 @@
       },
       "ImportFormat": {
         "enum": [
-          ".pdf",
           ".txt",
           ".md"
         ],
@@ -172,6 +260,57 @@
         ],
         "title": "ImportState",
         "type": "string"
+      },
+      "ImportWarning": {
+        "additionalProperties": false,
+        "properties": {
+          "blockId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Blockid"
+          },
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "severity": {
+            "title": "Severity",
+            "type": "string"
+          },
+          "sourcePage": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sourcepage"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "severity",
+          "message"
+        ],
+        "title": "ImportWarning",
+        "type": "object"
       },
       "ListProjectsResponse": {
         "additionalProperties": false,
@@ -209,9 +348,13 @@
       },
       "ModelInstallErrorCode": {
         "enum": [
-          "MODEL_DOWNLOAD_UNAVAILABLE",
-          "MODEL_DOWNLOAD_ERROR",
-          "MODEL_MANIFEST_INVALID"
+          "UNSUPPORTED_HARDWARE",
+          "DISK_SPACE_LOW",
+          "MODEL_MANIFEST_FETCH_FAILED",
+          "MODEL_MANIFEST_INVALID",
+          "MODEL_DOWNLOAD_FAILED",
+          "MODEL_CHECKSUM_MISMATCH",
+          "INTERRUPTED"
         ],
         "title": "ModelInstallErrorCode",
         "type": "string"
@@ -341,8 +484,7 @@
       },
       "ModelTier": {
         "enum": [
-          "tada-3b-q4",
-          "tada-1b-q4"
+          "tada-3b-q4"
         ],
         "title": "ModelTier",
         "type": "string"
@@ -602,6 +744,108 @@
         "title": "ProjectImportSummary",
         "type": "object"
       },
+      "ProseMirrorNode-Input": {
+        "additionalProperties": false,
+        "properties": {
+          "attrs": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attrs"
+          },
+          "content": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ProseMirrorNode-Input"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content"
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "title": "ProseMirrorNode",
+        "type": "object"
+      },
+      "ProseMirrorNode-Output": {
+        "additionalProperties": false,
+        "properties": {
+          "attrs": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attrs"
+          },
+          "content": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ProseMirrorNode-Output"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content"
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "title": "ProseMirrorNode",
+        "type": "object"
+      },
       "RuntimeBlockingIssue": {
         "additionalProperties": false,
         "properties": {
@@ -626,8 +870,7 @@
           "DISK_SPACE_LOW",
           "UNSUPPORTED_HARDWARE",
           "MODEL_MANIFEST_INVALID",
-          "MODEL_DOWNLOAD_ERROR",
-          "MODEL_DOWNLOAD_UNAVAILABLE"
+          "MODEL_DOWNLOAD_ERROR"
         ],
         "title": "RuntimeBlockingIssueCode",
         "type": "string"
@@ -726,6 +969,45 @@
           }
         },
         "title": "StartModelDownloadRequest",
+        "type": "object"
+      },
+      "StartModelDownloadResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "modelInstall": {
+            "$ref": "#/components/schemas/ModelInstallStatus"
+          },
+          "result": {
+            "$ref": "#/components/schemas/StartModelDownloadResult"
+          }
+        },
+        "required": [
+          "result",
+          "modelInstall"
+        ],
+        "title": "StartModelDownloadResponse",
+        "type": "object"
+      },
+      "StartModelDownloadResult": {
+        "enum": [
+          "started",
+          "already_downloading",
+          "already_installed"
+        ],
+        "title": "StartModelDownloadResult",
+        "type": "string"
+      },
+      "UpdateChapterRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "editorDoc": {
+            "$ref": "#/components/schemas/ProseMirrorNode-Input"
+          }
+        },
+        "required": [
+          "editorDoc"
+        ],
+        "title": "UpdateChapterRequest",
         "type": "object"
       },
       "UpdateProjectRequest": {
@@ -1134,6 +1416,136 @@
         ]
       }
     },
+    "/projects/{project_id}/chapters/{chapter_id}": {
+      "get": {
+        "operationId": "get_chapter_projects__project_id__chapters__chapter_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "chapter_id",
+            "required": true,
+            "schema": {
+              "title": "Chapter Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChapterDetailResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Chapter",
+        "tags": [
+          "chapters"
+        ]
+      },
+      "patch": {
+        "operationId": "patch_chapter_projects__project_id__chapters__chapter_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "chapter_id",
+            "required": true,
+            "schema": {
+              "title": "Chapter Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateChapterRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChapterDetailResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        },
+        "summary": "Patch Chapter",
+        "tags": [
+          "chapters"
+        ]
+      }
+    },
     "/projects/{project_id}/imports": {
       "post": {
         "operationId": "import_project_file_projects__project_id__imports_post",
@@ -1220,6 +1632,36 @@
           "required": true
         },
         "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StartModelDownloadResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StartModelDownloadResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
           "422": {
             "content": {
               "application/json": {
@@ -1230,7 +1672,7 @@
             },
             "description": "Unprocessable Content"
           },
-          "501": {
+          "502": {
             "content": {
               "application/json": {
                 "schema": {
@@ -1238,7 +1680,17 @@
                 }
               }
             },
-            "description": "Successful Response"
+            "description": "Bad Gateway"
+          },
+          "507": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Insufficient Storage"
           }
         },
         "summary": "Request Model Download",

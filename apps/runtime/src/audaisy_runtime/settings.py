@@ -16,11 +16,9 @@ class Settings:
     minimum_disk_free_bytes: int = 15 * 1024 * 1024 * 1024
     minimum_memory_for_3b_bytes: int = 16 * 1024 * 1024 * 1024
     default_model_tier: ModelTier = ModelTier.TADA_3B_Q4
-    fallback_model_tier: ModelTier = ModelTier.TADA_1B_Q4
     machine_arch_override: str | None = None
     machine_memory_bytes_override: int | None = None
     supported_import_formats: tuple[ImportFormat, ...] = (
-        ImportFormat.PDF,
         ImportFormat.TXT,
         ImportFormat.MD,
     )

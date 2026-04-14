@@ -26,9 +26,19 @@ def test_generated_contract_artifacts_match_repo_contract_package(runtime_settin
         == "#/components/schemas/RuntimeBlockingIssue"
     )
     runtime_download_responses = generated_openapi["paths"]["/runtime/models/download"]["post"]["responses"]
-    assert set(runtime_download_responses) == {"501", "422"}
-    assert runtime_download_responses["501"]["content"]["application/json"]["schema"]["$ref"] == "#/components/schemas/ErrorEnvelope"
+    assert set(runtime_download_responses) == {"200", "202", "409", "422", "502", "507"}
+    assert (
+        runtime_download_responses["200"]["content"]["application/json"]["schema"]["$ref"]
+        == "#/components/schemas/StartModelDownloadResponse"
+    )
+    assert (
+        runtime_download_responses["202"]["content"]["application/json"]["schema"]["$ref"]
+        == "#/components/schemas/StartModelDownloadResponse"
+    )
+    assert runtime_download_responses["409"]["content"]["application/json"]["schema"]["$ref"] == "#/components/schemas/ErrorEnvelope"
     assert runtime_download_responses["422"]["content"]["application/json"]["schema"]["$ref"] == "#/components/schemas/ErrorEnvelope"
+    assert runtime_download_responses["502"]["content"]["application/json"]["schema"]["$ref"] == "#/components/schemas/ErrorEnvelope"
+    assert runtime_download_responses["507"]["content"]["application/json"]["schema"]["$ref"] == "#/components/schemas/ErrorEnvelope"
     runtime_status_properties = generated_openapi["components"]["schemas"]["RuntimeStatusResponse"]["properties"]
     assert runtime_status_properties["supportedImportFormats"]["items"]["$ref"] == "#/components/schemas/ImportFormat"
     for path, method in [
@@ -42,10 +52,11 @@ def test_generated_contract_artifacts_match_repo_contract_package(runtime_settin
             generated_openapi["paths"][path][method]["responses"]["422"]["content"]["application/json"]["schema"]["$ref"]
             == "#/components/schemas/ErrorEnvelope"
         )
-    assert "StartModelDownloadResponse" not in generated_openapi["components"]["schemas"]
+    assert "StartModelDownloadResponse" in generated_openapi["components"]["schemas"]
     assert "ImportFormat" in generated_openapi["components"]["schemas"]
     assert "export type RuntimeBlockingIssue =" in repo_types
     assert "export type ImportFormat =" in repo_types
     assert "export type CreateImportResponse =" in repo_types
+    assert 'export type ModelTier = "tada-3b-q4";' in repo_types
     assert "supportedImportFormats: ImportFormat[];" in repo_types
-    assert "export type StartModelDownloadResponse =" not in repo_types
+    assert "export type StartModelDownloadResponse =" in repo_types

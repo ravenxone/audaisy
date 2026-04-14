@@ -1,0 +1,57 @@
+.editorShell {
+  width: 100%;
+  min-height: 100%;
+}
+
+.editorSurface {
+  min-height: 720px;
+  padding: clamp(40px, 5vw, 72px) clamp(28px, 5vw, 80px);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 0;
+  background: #ffffff;
+}
+
+.editorContent {
+  min-height: 560px;
+  max-width: 72ch;
+  margin: 0 auto;
+  outline: none;
+  color: #1f2937;
+  font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+  font-size: 20px;
+  line-height: 1.85;
+}
+
+.editorContent :global(h1),
+.editorContent :global(h2),
+.editorContent :global(h3),
+.editorContent :global(h4),
+.editorContent :global(h5),
+.editorContent :global(h6) {
+  margin: 0 0 20px;
+  color: #111827;
+  font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.editorContent :global(p) {
+  margin: 0 0 20px;
+}
+
+.editorContent :global(p:last-child) {
+  margin-bottom: 0;
+}
+
+@media (max-width: 900px) {
+  .editorSurface {
+    min-height: 560px;
+    padding: 28px 22px 36px;
+  }
+
+  .editorContent {
+    min-height: 420px;
+    font-size: 18px;
+    line-height: 1.75;
+  }
+}

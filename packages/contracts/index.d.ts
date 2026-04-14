@@ -1,11 +1,12 @@
 export declare const CONTRACT_VERSION: "0.1.0";
 
-export type ApiErrorCode = "INVALID_REQUEST" | "PROJECT_NOT_FOUND" | "UNSUPPORTED_IMPORT_TYPE" | "MALFORMED_IMPORT" | "MODEL_DOWNLOAD_UNAVAILABLE";
-export type ImportFormat = ".pdf" | ".txt" | ".md";
-export type RuntimeBlockingIssueCode = "MODELS_MISSING" | "DISK_SPACE_LOW" | "UNSUPPORTED_HARDWARE" | "MODEL_MANIFEST_INVALID" | "MODEL_DOWNLOAD_ERROR" | "MODEL_DOWNLOAD_UNAVAILABLE";
-export type ModelInstallErrorCode = "MODEL_DOWNLOAD_UNAVAILABLE" | "MODEL_DOWNLOAD_ERROR" | "MODEL_MANIFEST_INVALID";
-export type ModelTier = "tada-3b-q4" | "tada-1b-q4";
+export type ApiErrorCode = "INVALID_REQUEST" | "PROJECT_NOT_FOUND" | "CHAPTER_NOT_FOUND" | "UNSUPPORTED_IMPORT_TYPE" | "MALFORMED_IMPORT" | "MODEL_HARDWARE_UNSUPPORTED" | "MODEL_DISK_SPACE_LOW" | "MODEL_MANIFEST_FETCH_FAILED" | "MODEL_MANIFEST_INVALID" | "MODEL_DOWNLOAD_FAILED" | "MODEL_CHECKSUM_MISMATCH";
+export type ImportFormat = ".txt" | ".md";
+export type RuntimeBlockingIssueCode = "MODELS_MISSING" | "DISK_SPACE_LOW" | "UNSUPPORTED_HARDWARE" | "MODEL_MANIFEST_INVALID" | "MODEL_DOWNLOAD_ERROR";
+export type ModelInstallErrorCode = "UNSUPPORTED_HARDWARE" | "DISK_SPACE_LOW" | "MODEL_MANIFEST_FETCH_FAILED" | "MODEL_MANIFEST_INVALID" | "MODEL_DOWNLOAD_FAILED" | "MODEL_CHECKSUM_MISMATCH" | "INTERRUPTED";
+export type ModelTier = "tada-3b-q4";
 export type ModelInstallState = "not_installed" | "unavailable" | "downloading" | "verifying" | "installed" | "error";
+export type StartModelDownloadResult = "started" | "already_downloading" | "already_installed";
 export type ImportState = "stored" | "processing" | "completed" | "failed";
 
 export type ApiError = {
@@ -74,11 +75,51 @@ export type StartModelDownloadRequest = {
   requestedTier?: ModelTier | null;
 };
 
+export type StartModelDownloadResponse = {
+  result: StartModelDownloadResult;
+  modelInstall: ModelInstallStatus;
+};
+
+export type ProseMirrorNode = {
+  type: string;
+  attrs?: Record<string, unknown>;
+  content?: ProseMirrorNode[];
+  text?: string;
+};
+
+export type ImportWarning = {
+  id: string;
+  code: string;
+  severity: string;
+  message: string;
+  sourcePage?: number | null;
+  blockId?: string | null;
+};
+
 export type ChapterSummary = {
   id: string;
   title: string;
   order: number;
   warningCount: number;
+  sourceDocumentRecordId?: string | null;
+};
+
+export type ChapterDetailResponse = {
+  id: string;
+  projectId: string;
+  title: string;
+  order: number;
+  revision: number;
+  editorDoc: ProseMirrorNode;
+  markdown: string;
+  warnings: ImportWarning[];
+  sourceDocumentRecordId?: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type UpdateChapterRequest = {
+  editorDoc: ProseMirrorNode;
 };
 
 export type ProjectCard = {

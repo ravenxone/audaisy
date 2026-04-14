@@ -13,6 +13,7 @@ from audaisy_runtime.contracts.models import (
     ProjectImportSummary,
     UpdateProjectRequest,
 )
+from audaisy_runtime.persistence.chapter_repository import ChapterRepository
 from audaisy_runtime.errors import DomainError
 from audaisy_runtime.persistence.document_record_repository import DocumentRecordRepository
 from audaisy_runtime.persistence.project_repository import ProjectRepository
@@ -24,10 +25,12 @@ class ProjectService:
     def __init__(
         self,
         repository: ProjectRepository,
+        chapter_repository: ChapterRepository,
         document_record_repository: DocumentRecordRepository,
         app_paths: AppPaths,
     ) -> None:
         self._repository = repository
+        self._chapter_repository = chapter_repository
         self._document_record_repository = document_record_repository
         self._app_paths = app_paths
 
@@ -103,8 +106,9 @@ class ProjectService:
                 title=row["title"],
                 order=row["chapter_order"],
                 warning_count=row["warning_count"],
+                source_document_record_id=row["document_record_id"],
             )
-            for row in self._repository.list_chapter_summaries(project_id)
+            for row in self._chapter_repository.list_summaries(project_id)
         ]
         imports = [
             ProjectImportSummary(

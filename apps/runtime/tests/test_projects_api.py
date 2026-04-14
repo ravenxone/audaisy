@@ -87,3 +87,38 @@ def test_delete_project_removes_it_from_database_and_disk(make_client, runtime_s
     assert list_response.json() == {"projects": []}
     assert get_response.status_code == 404
     assert not (runtime_settings.app_data_root / "projects" / created_project["id"]).exists()
+
+
+def test_get_project_includes_completed_imports_and_chapter_source_links(make_client) -> None:
+    with make_client() as client:
+        created_project = client.post("/projects", json={"title": "Imported Book"}).json()
+        import_response = client.post(
+            f"/projects/{created_project['id']}/imports",
+            files={"file": ("chapter.md", b"# Chapter One\n\nImported paragraph.", "text/markdown")},
+        )
+        project_response = client.get(f"/projects/{created_project['id']}")
+
+    assert import_response.status_code == 201
+    assert project_response.status_code == 200
+    assert project_response.json()["imports"] == [
+        {
+            "id": import_response.json()["import"]["id"],
+            "state": "completed",
+            "sourceFileName": "chapter.md",
+            "sourceMimeType": "text/markdown",
+            "sourceSha256": import_response.json()["import"]["sourceSha256"],
+            "fileSizeBytes": len(b"# Chapter One\n\nImported paragraph."),
+            "createdAt": project_response.json()["imports"][0]["createdAt"],
+            "updatedAt": project_response.json()["imports"][0]["updatedAt"],
+            "failureMessage": None,
+        }
+    ]
+    assert project_response.json()["chapters"] == [
+        {
+            "id": project_response.json()["chapters"][0]["id"],
+            "title": "Chapter One",
+            "order": 1,
+            "warningCount": 0,
+            "sourceDocumentRecordId": import_response.json()["import"]["id"],
+        }
+    ]
