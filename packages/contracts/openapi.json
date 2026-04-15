@@ -24,6 +24,7 @@
           "INVALID_REQUEST",
           "PROJECT_NOT_FOUND",
           "CHAPTER_NOT_FOUND",
+          "RENDER_JOB_NOT_FOUND",
           "UNSUPPORTED_IMPORT_TYPE",
           "MALFORMED_IMPORT",
           "MODEL_HARDWARE_UNSUPPORTED",
@@ -31,7 +32,12 @@
           "MODEL_MANIFEST_FETCH_FAILED",
           "MODEL_MANIFEST_INVALID",
           "MODEL_DOWNLOAD_FAILED",
-          "MODEL_CHECKSUM_MISMATCH"
+          "MODEL_CHECKSUM_MISMATCH",
+          "MODEL_NOT_READY",
+          "MODEL_LOAD_FAILED",
+          "VOICE_PRESET_NOT_FOUND",
+          "VOICE_REFERENCE_MISSING",
+          "RENDER_GENERATION_FAILED"
         ],
         "title": "ApiErrorCode",
         "type": "string"
@@ -193,6 +199,31 @@
         "title": "CreateProjectRequest",
         "type": "object"
       },
+      "CreateRenderJobRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "chapterId": {
+            "title": "Chapterid",
+            "type": "string"
+          },
+          "voicePresetId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Voicepresetid"
+          }
+        },
+        "required": [
+          "chapterId"
+        ],
+        "title": "CreateRenderJobRequest",
+        "type": "object"
+      },
       "ErrorEnvelope": {
         "additionalProperties": false,
         "properties": {
@@ -327,6 +358,23 @@
           "projects"
         ],
         "title": "ListProjectsResponse",
+        "type": "object"
+      },
+      "ListRenderJobsResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "jobs": {
+            "items": {
+              "$ref": "#/components/schemas/RenderJobResponse"
+            },
+            "title": "Jobs",
+            "type": "array"
+          }
+        },
+        "required": [
+          "jobs"
+        ],
+        "title": "ListRenderJobsResponse",
         "type": "object"
       },
       "ListVoicePresetsResponse": {
@@ -846,6 +894,256 @@
         "title": "ProseMirrorNode",
         "type": "object"
       },
+      "RenderFailureCode": {
+        "enum": [
+          "INTERRUPTED",
+          "MODEL_NOT_READY",
+          "MODEL_LOAD_FAILED",
+          "VOICE_PRESET_NOT_FOUND",
+          "VOICE_REFERENCE_MISSING",
+          "RENDER_GENERATION_FAILED",
+          "OUTPUT_ASSEMBLY_FAILED"
+        ],
+        "title": "RenderFailureCode",
+        "type": "string"
+      },
+      "RenderJobResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "audioArtifactId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audioartifactid"
+          },
+          "chapterId": {
+            "title": "Chapterid",
+            "type": "string"
+          },
+          "completedAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completedat"
+          },
+          "createdAt": {
+            "title": "Createdat",
+            "type": "string"
+          },
+          "errorCode": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RenderFailureCode"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "errorMessage": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Errormessage"
+          },
+          "hasAudio": {
+            "title": "Hasaudio",
+            "type": "boolean"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "modelTier": {
+            "$ref": "#/components/schemas/ModelTier"
+          },
+          "projectId": {
+            "title": "Projectid",
+            "type": "string"
+          },
+          "segmentSummaries": {
+            "items": {
+              "$ref": "#/components/schemas/RenderSegmentSummary"
+            },
+            "title": "Segmentsummaries",
+            "type": "array"
+          },
+          "sourceChapterRevision": {
+            "title": "Sourcechapterrevision",
+            "type": "integer"
+          },
+          "startedAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Startedat"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RenderJobStatus"
+          },
+          "updatedAt": {
+            "title": "Updatedat",
+            "type": "string"
+          },
+          "voicePresetId": {
+            "title": "Voicepresetid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "chapterId",
+          "voicePresetId",
+          "modelTier",
+          "sourceChapterRevision",
+          "status",
+          "segmentSummaries",
+          "hasAudio",
+          "audioArtifactId",
+          "createdAt",
+          "updatedAt"
+        ],
+        "title": "RenderJobResponse",
+        "type": "object"
+      },
+      "RenderJobStatus": {
+        "enum": [
+          "queued",
+          "running",
+          "assembling",
+          "completed",
+          "failed"
+        ],
+        "title": "RenderJobStatus",
+        "type": "string"
+      },
+      "RenderSegmentStatus": {
+        "enum": [
+          "queued",
+          "running",
+          "completed",
+          "failed"
+        ],
+        "title": "RenderSegmentStatus",
+        "type": "string"
+      },
+      "RenderSegmentSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "audioArtifactId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audioartifactid"
+          },
+          "blockIds": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Blockids",
+            "type": "array"
+          },
+          "chapterId": {
+            "title": "Chapterid",
+            "type": "string"
+          },
+          "completedAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completedat"
+          },
+          "errorCode": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RenderFailureCode"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "errorMessage": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Errormessage"
+          },
+          "hasAudio": {
+            "title": "Hasaudio",
+            "type": "boolean"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "order": {
+            "title": "Order",
+            "type": "integer"
+          },
+          "startedAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Startedat"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RenderSegmentStatus"
+          }
+        },
+        "required": [
+          "id",
+          "chapterId",
+          "order",
+          "status",
+          "blockIds",
+          "hasAudio",
+          "audioArtifactId"
+        ],
+        "title": "RenderSegmentSummary",
+        "type": "object"
+      },
       "RuntimeBlockingIssue": {
         "additionalProperties": false,
         "properties": {
@@ -1082,16 +1380,9 @@
       "VoicePresetResponse": {
         "additionalProperties": false,
         "properties": {
-          "cachedReferencePath": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Cachedreferencepath"
+          "hasReference": {
+            "title": "Hasreference",
+            "type": "boolean"
           },
           "id": {
             "title": "Id",
@@ -1110,7 +1401,7 @@
           "id",
           "name",
           "language",
-          "cachedReferencePath"
+          "hasReference"
         ],
         "title": "VoicePresetResponse",
         "type": "object"
@@ -1119,7 +1410,7 @@
   },
   "info": {
     "title": "Audaisy Runtime",
-    "version": "0.1.0"
+    "version": "0.2.0"
   },
   "openapi": "3.1.0",
   "paths": {
@@ -1615,6 +1906,189 @@
         "summary": "Import Project File",
         "tags": [
           "projects"
+        ]
+      }
+    },
+    "/projects/{project_id}/render-jobs": {
+      "get": {
+        "operationId": "list_render_jobs_projects__project_id__render_jobs_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListRenderJobsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Render Jobs",
+        "tags": [
+          "render-jobs"
+        ]
+      },
+      "post": {
+        "operationId": "create_render_job_projects__project_id__render_jobs_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRenderJobRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RenderJobResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        },
+        "summary": "Create Render Job",
+        "tags": [
+          "render-jobs"
+        ]
+      }
+    },
+    "/projects/{project_id}/render-jobs/{job_id}": {
+      "get": {
+        "operationId": "get_render_job_projects__project_id__render_jobs__job_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RenderJobResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Render Job",
+        "tags": [
+          "render-jobs"
         ]
       }
     },

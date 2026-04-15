@@ -7,12 +7,15 @@ import type {
   ProfileResponse,
   ProjectDetailResponse,
   RuntimeStatusResponse,
+  StartModelDownloadRequest,
+  StartModelDownloadResponse,
   UpdateChapterRequest,
 } from "@audaisy/contracts";
 
 export type AudaisyClient = {
   runtime: {
     getStatus: () => Promise<RuntimeStatusResponse>;
+    startModelDownload: (input: StartModelDownloadRequest) => Promise<StartModelDownloadResponse>;
   };
   profile: {
     get: () => Promise<ProfileResponse>;

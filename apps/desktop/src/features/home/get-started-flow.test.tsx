@@ -14,7 +14,7 @@ describe("Create project flow", () => {
       createProjectImpl: () => deferred.promise,
     });
 
-    renderApp({ client, initialEntries: ["/home"] });
+    renderApp({ client, initialEntries: ["/library"] });
 
     const cta = await screen.findByRole("button", { name: "Get started" });
     await user.click(cta);
@@ -35,7 +35,7 @@ describe("Create project flow", () => {
       createProjectImpl: () => deferred.promise,
     });
 
-    renderApp({ client, initialEntries: ["/home"] });
+    renderApp({ client, initialEntries: ["/library"] });
 
     const cta = await screen.findByRole("button", { name: "Get started" });
     await user.click(cta);
@@ -53,7 +53,7 @@ describe("Create project flow", () => {
     const user = userEvent.setup();
     const client = createInMemoryAudaisyClient();
 
-    renderApp({ client, initialEntries: ["/home"] });
+    renderApp({ client, initialEntries: ["/library"] });
 
     await user.click(await screen.findByRole("button", { name: "Get started" }));
 
@@ -65,7 +65,7 @@ describe("Create project flow", () => {
     const user = userEvent.setup();
     const client = createInMemoryAudaisyClient();
 
-    renderApp({ client, initialEntries: ["/home"] });
+    renderApp({ client, initialEntries: ["/library"] });
 
     await user.click(await screen.findByRole("button", { name: "Get started" }));
 
@@ -81,7 +81,7 @@ describe("Create project flow", () => {
       },
     });
 
-    renderApp({ client, initialEntries: ["/home"] });
+    renderApp({ client, initialEntries: ["/library"] });
 
     await user.click(await screen.findByRole("button", { name: "Get started" }));
 
@@ -103,7 +103,7 @@ describe("Create project flow", () => {
       },
     });
 
-    renderApp({ client, initialEntries: ["/home"] });
+    renderApp({ client, initialEntries: ["/library"] });
 
     await user.click(await screen.findByRole("button", { name: "Get started" }));
     await user.click(await screen.findByRole("button", { name: "Retry" }));

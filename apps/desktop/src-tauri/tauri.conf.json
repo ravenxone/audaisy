@@ -17,6 +17,7 @@
         "title": "Audaisy",
         "width": 1440,
         "height": 960,
+        "dragDropEnabled": false,
         "resizable": true
       }
     ]

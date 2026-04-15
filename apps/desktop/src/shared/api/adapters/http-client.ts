@@ -9,6 +9,8 @@ import type {
   ProfileResponse,
   ProjectDetailResponse,
   RuntimeStatusResponse,
+  StartModelDownloadRequest,
+  StartModelDownloadResponse,
   UpdateChapterRequest,
 } from "@audaisy/contracts";
 
@@ -98,6 +100,14 @@ export function createHttpAudaisyClient(options: HttpAudaisyClientOptions): Auda
   return {
     runtime: {
       getStatus: () => requestJson<RuntimeStatusResponse>(fetchImpl, options.baseUrl, "/runtime/status"),
+      startModelDownload: (input) =>
+        requestJson<StartModelDownloadResponse>(fetchImpl, options.baseUrl, "/runtime/models/download", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(input satisfies StartModelDownloadRequest),
+        }),
     },
     profile: {
       get: () => requestJson<ProfileResponse>(fetchImpl, options.baseUrl, "/profile"),

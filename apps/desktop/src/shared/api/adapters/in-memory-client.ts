@@ -3,6 +3,7 @@ import type {
   ChapterDetailResponse,
   CreateImportResponse,
   CreateProjectRequest,
+  ModelInstallStatus,
   PatchProfileRequest,
   ProfileResponse,
   ProjectImportSummary,
@@ -10,12 +11,15 @@ import type {
   ProjectDetailResponse,
   ProseMirrorNode,
   RuntimeStatusResponse,
+  StartModelDownloadRequest,
+  StartModelDownloadResponse,
   UpdateChapterRequest,
 } from "@audaisy/contracts";
 
 type InMemoryClientOptions = {
   runtimeStatus?: Partial<RuntimeStatusResponse>;
   getRuntimeStatusImpl?: () => Promise<RuntimeStatusResponse>;
+  startModelDownloadImpl?: (input: StartModelDownloadRequest) => Promise<StartModelDownloadResponse>;
   profile?: ProfileResponse;
   getProfileImpl?: () => Promise<ProfileResponse>;
   updateProfileImpl?: (input: PatchProfileRequest) => Promise<ProfileResponse>;
@@ -36,6 +40,8 @@ type InMemoryClientOptions = {
 
 type InMemoryAudaisyClient = AudaisyClient & {
   calls: {
+    getRuntimeStatus: number;
+    startModelDownload: number;
     getProfile: number;
     updateProfile: number;
     createProject: number;
@@ -191,10 +197,26 @@ function nextTimestamp() {
   return new Date("2026-04-13T12:00:00.000Z").toISOString();
 }
 
+function syncRuntimeStatusFromModelInstall(
+  currentStatus: RuntimeStatusResponse,
+  modelInstall: ModelInstallStatus,
+): RuntimeStatusResponse {
+  const modelsReady = modelInstall.state === "installed";
+
+  return {
+    ...currentStatus,
+    modelsReady,
+    activeModelTier: modelsReady ? modelInstall.resolvedTier : null,
+    modelInstall,
+  };
+}
+
 export function createInMemoryAudaisyClient(options: InMemoryClientOptions = {}): InMemoryAudaisyClient {
-  const runtimeStatus = buildRuntimeStatus(options.runtimeStatus);
+  let runtimeStatus = buildRuntimeStatus(options.runtimeStatus);
   let profile = options.profile ?? buildProfile();
   const calls = {
+    getRuntimeStatus: 0,
+    startModelDownload: 0,
     getProfile: 0,
     updateProfile: 0,
     createProject: 0,
@@ -233,7 +255,30 @@ export function createInMemoryAudaisyClient(options: InMemoryClientOptions = {})
 
   const client: InMemoryAudaisyClient = {
     runtime: {
-      getStatus: async () => (await options.getRuntimeStatusImpl?.()) ?? runtimeStatus,
+      getStatus: async () => {
+        calls.getRuntimeStatus += 1;
+        return (await options.getRuntimeStatusImpl?.()) ?? runtimeStatus;
+      },
+      startModelDownload: async (input) => {
+        calls.startModelDownload += 1;
+        const response =
+          (await options.startModelDownloadImpl?.(input)) ?? {
+            result: "started",
+            modelInstall: {
+              ...runtimeStatus.modelInstall,
+              state: "downloading",
+              requestedTier: runtimeStatus.defaultModelTier,
+              resolvedTier: null,
+              bytesDownloaded: 0,
+              totalBytes: runtimeStatus.modelInstall.totalBytes,
+              updatedAt: nextTimestamp(),
+              lastErrorCode: null,
+              lastErrorMessage: null,
+            },
+          };
+        runtimeStatus = syncRuntimeStatusFromModelInstall(runtimeStatus, response.modelInstall);
+        return response;
+      },
     },
     profile: {
       get: async () => {

@@ -18,6 +18,7 @@ describe("AppShell", () => {
   const shellProps = {
     creatingProject: false,
     deletingProjectId: null,
+    modelStatus: { label: "Model ready" },
     onCreateProject: () => {},
     onDeleteProject: () => {},
     projectActionError: null,
@@ -40,11 +41,11 @@ describe("AppShell", () => {
       <AppShell {...shellProps} profile={PROFILE} projects={projects}>
         <div>Body</div>
       </AppShell>,
-      { initialEntries: ["/home"] },
+      { initialEntries: ["/library"] },
     );
 
     expect(screen.getByText("Main")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Home" })).toHaveAttribute("href", "/home");
+    expect(screen.getByRole("link", { name: "Library" })).toHaveAttribute("href", "/library");
     expect(screen.getByText("Projects")).toBeInTheDocument();
     expect(screen.getByText("Trash")).toBeInTheDocument();
     expect(screen.getByText("Downloads")).toBeInTheDocument();
@@ -54,9 +55,10 @@ describe("AppShell", () => {
     expect(screen.getByRole("link", { name: "Documentation" })).toBeInTheDocument();
     expect(screen.getByText("Settings")).toBeInTheDocument();
     expect(screen.getByText("Raven")).toBeInTheDocument();
+    expect(screen.getByTestId("sidebar-model-status")).toBeInTheDocument();
     expect(screen.getByLabelText("Audaisy brand")).toBeInTheDocument();
     expect(screen.getByLabelText("Sidebar toggle")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Home" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "Library" })).toHaveAttribute("aria-current", "page");
     expect(screen.getByText("Trash").closest("[aria-disabled='true']")).not.toBeNull();
     expect(screen.getByText("Downloads").closest("[aria-disabled='true']")).not.toBeNull();
     expect(screen.getByText("Settings").closest("[aria-disabled='true']")).not.toBeNull();
@@ -95,7 +97,7 @@ describe("AppShell", () => {
 
     expect(screen.getByText("Downloads")).toBeInTheDocument();
     expect(screen.getByText("Downloads").closest("[aria-disabled='true']")).not.toBeNull();
-    expect(screen.getByRole("link", { name: "Home" })).not.toHaveAttribute("aria-current");
+    expect(screen.getByRole("link", { name: "Library" })).not.toHaveAttribute("aria-current");
     expect(screen.getByRole("link", { name: "Your first Project" })).toHaveAttribute("aria-current", "page");
     expect(screen.getByRole("link", { name: "Sample Project" })).not.toHaveAttribute("aria-current");
   });
@@ -159,7 +161,7 @@ describe("AppShell", () => {
       >
         <div>Body</div>
       </AppShell>,
-      { initialEntries: ["/home"] },
+      { initialEntries: ["/library"] },
     );
 
     const toggle = screen.getByRole("button", { name: "Sidebar toggle" });

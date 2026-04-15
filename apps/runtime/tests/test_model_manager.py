@@ -35,11 +35,13 @@ class FakeHfClient:
         *,
         manifest_payload: dict[str, object],
         files: dict[str, bytes],
+        file_chunks: dict[str, list[bytes]] | None = None,
         manifest_error: Exception | None = None,
         download_errors: dict[str, Exception] | None = None,
     ) -> None:
         self.manifest_payload = manifest_payload
         self.files = files
+        self.file_chunks = file_chunks or {}
         self.manifest_error = manifest_error
         self.download_errors = download_errors or {}
         self.fetch_calls: list[tuple[str, str, str]] = []
@@ -55,7 +57,7 @@ class FakeHfClient:
         self.download_calls.append((repo_id, revision, repo_path))
         if repo_path in self.download_errors:
             raise self.download_errors[repo_path]
-        yield self.files[repo_path]
+        yield from self.file_chunks.get(repo_path, [self.files[repo_path]])
 
 
 @pytest.fixture()
@@ -192,6 +194,36 @@ def test_run_install_marks_checksum_mismatch_as_error(
     status = manager.get_install_status()
     assert status.state == ModelInstallState.ERROR
     assert status.last_error_code == ModelInstallErrorCode.MODEL_CHECKSUM_MISMATCH
+
+
+def test_run_install_persists_incremental_bytes_during_active_download(runtime_settings) -> None:
+    from audaisy_runtime.contracts.models import ModelInstallState, StartModelDownloadRequest
+
+    files = {"model/weights.safetensors": b"abcdef"}
+    fake_hf = FakeHfClient(
+        manifest_payload=build_manifest(files),
+        files=files,
+        file_chunks={"model/weights.safetensors": [b"ab", b"cd", b"ef"]},
+    )
+    manager, _ = make_manager(runtime_settings, fake_hf)
+
+    saved_progress: list[int | None] = []
+    original_save = manager._save_install_status
+
+    def record_save(status):
+        if status.state == ModelInstallState.DOWNLOADING:
+            saved_progress.append(status.bytes_downloaded)
+        return original_save(status)
+
+    manager._save_install_status = record_save  # type: ignore[method-assign]
+
+    manager.start_install(StartModelDownloadRequest())
+    manager.run_install()
+
+    assert saved_progress[0] == 0
+    assert 2 in saved_progress
+    assert 4 in saved_progress
+    assert saved_progress[-1] == 6
 
 
 def test_reconcile_install_state_marks_interrupted_download_and_recovers_bytes(

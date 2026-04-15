@@ -129,7 +129,8 @@ class ImportService:
             if record is None:
                 return
 
-            if self._project_repository.get(project_id) is None:
+            project = self._project_repository.get(project_id)
+            if project is None:
                 raise DomainError(ApiErrorCode.PROJECT_NOT_FOUND, "Project was not found.", 404)
 
             project_paths = self._app_paths.project_paths(project_id)
@@ -187,6 +188,13 @@ class ImportService:
                     for warning in normalized.warnings
                 ]
             )
+            if chapter_order == 1 and normalized.chapter_title.strip() and project["title"] != normalized.chapter_title:
+                self._project_repository.update(
+                    project_id,
+                    normalized.chapter_title,
+                    project["default_voice_preset_id"],
+                    utc_now(),
+                )
             self._document_record_repository.mark_completed(
                 record_id,
                 canonical_json_path=self._relative_path(canonical_path),

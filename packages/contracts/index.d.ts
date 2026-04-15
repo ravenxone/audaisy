@@ -1,6 +1,6 @@
-export declare const CONTRACT_VERSION: "0.1.0";
+export declare const CONTRACT_VERSION: "0.2.0";
 
-export type ApiErrorCode = "INVALID_REQUEST" | "PROJECT_NOT_FOUND" | "CHAPTER_NOT_FOUND" | "UNSUPPORTED_IMPORT_TYPE" | "MALFORMED_IMPORT" | "MODEL_HARDWARE_UNSUPPORTED" | "MODEL_DISK_SPACE_LOW" | "MODEL_MANIFEST_FETCH_FAILED" | "MODEL_MANIFEST_INVALID" | "MODEL_DOWNLOAD_FAILED" | "MODEL_CHECKSUM_MISMATCH";
+export type ApiErrorCode = "INVALID_REQUEST" | "PROJECT_NOT_FOUND" | "CHAPTER_NOT_FOUND" | "RENDER_JOB_NOT_FOUND" | "UNSUPPORTED_IMPORT_TYPE" | "MALFORMED_IMPORT" | "MODEL_HARDWARE_UNSUPPORTED" | "MODEL_DISK_SPACE_LOW" | "MODEL_MANIFEST_FETCH_FAILED" | "MODEL_MANIFEST_INVALID" | "MODEL_DOWNLOAD_FAILED" | "MODEL_CHECKSUM_MISMATCH" | "MODEL_NOT_READY" | "MODEL_LOAD_FAILED" | "VOICE_PRESET_NOT_FOUND" | "VOICE_REFERENCE_MISSING" | "RENDER_GENERATION_FAILED";
 export type ImportFormat = ".txt" | ".md";
 export type RuntimeBlockingIssueCode = "MODELS_MISSING" | "DISK_SPACE_LOW" | "UNSUPPORTED_HARDWARE" | "MODEL_MANIFEST_INVALID" | "MODEL_DOWNLOAD_ERROR";
 export type ModelInstallErrorCode = "UNSUPPORTED_HARDWARE" | "DISK_SPACE_LOW" | "MODEL_MANIFEST_FETCH_FAILED" | "MODEL_MANIFEST_INVALID" | "MODEL_DOWNLOAD_FAILED" | "MODEL_CHECKSUM_MISMATCH" | "INTERRUPTED";
@@ -8,6 +8,9 @@ export type ModelTier = "tada-3b-q4";
 export type ModelInstallState = "not_installed" | "unavailable" | "downloading" | "verifying" | "installed" | "error";
 export type StartModelDownloadResult = "started" | "already_downloading" | "already_installed";
 export type ImportState = "stored" | "processing" | "completed" | "failed";
+export type RenderJobStatus = "queued" | "running" | "assembling" | "completed" | "failed";
+export type RenderSegmentStatus = "queued" | "running" | "completed" | "failed";
+export type RenderFailureCode = "INTERRUPTED" | "MODEL_NOT_READY" | "MODEL_LOAD_FAILED" | "VOICE_PRESET_NOT_FOUND" | "VOICE_REFERENCE_MISSING" | "RENDER_GENERATION_FAILED" | "OUTPUT_ASSEMBLY_FAILED";
 
 export type ApiError = {
   code: ApiErrorCode;
@@ -177,9 +180,51 @@ export type VoicePresetResponse = {
   id: string;
   name: string;
   language: string;
-  cachedReferencePath: string | null;
+  hasReference: boolean;
 };
 
 export type ListVoicePresetsResponse = {
   presets: VoicePresetResponse[];
+};
+
+export type CreateRenderJobRequest = {
+  chapterId: string;
+  voicePresetId?: string | null;
+};
+
+export type RenderSegmentSummary = {
+  id: string;
+  chapterId: string;
+  order: number;
+  status: RenderSegmentStatus;
+  blockIds: string[];
+  hasAudio: boolean;
+  audioArtifactId: string | null;
+  startedAt?: string | null;
+  completedAt?: string | null;
+  errorCode?: RenderFailureCode | null;
+  errorMessage?: string | null;
+};
+
+export type RenderJobResponse = {
+  id: string;
+  projectId: string;
+  chapterId: string;
+  voicePresetId: string;
+  modelTier: ModelTier;
+  sourceChapterRevision: number;
+  status: RenderJobStatus;
+  segmentSummaries: RenderSegmentSummary[];
+  hasAudio: boolean;
+  audioArtifactId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  startedAt?: string | null;
+  completedAt?: string | null;
+  errorCode?: RenderFailureCode | null;
+  errorMessage?: string | null;
+};
+
+export type ListRenderJobsResponse = {
+  jobs: RenderJobResponse[];
 };

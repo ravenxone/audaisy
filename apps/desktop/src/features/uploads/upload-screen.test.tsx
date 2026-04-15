@@ -112,6 +112,27 @@ describe("Upload screen", () => {
     expect(await screen.findByText("Please choose a .txt or .md file for this step.")).toBeInTheDocument();
   });
 
+  it("uses runtime-supported import formats without a local fallback mirror", async () => {
+    const client = createInMemoryAudaisyClient({
+      initialProjects: SEEDED_PROJECTS,
+      runtimeStatus: {
+        supportedImportFormats: [".md"],
+      },
+    });
+
+    renderApp({ client, initialEntries: ["/projects/your-first-project"] });
+
+    expect(await screen.findByText(".md")).toBeInTheDocument();
+    expect(screen.queryByText(".txt, .md")).not.toBeInTheDocument();
+
+    const frame = screen.getByTestId("upload-frame");
+    fireEvent.drop(frame, {
+      dataTransfer: { files: createFileList([createFile("chapter.txt", "text/plain")]) },
+    });
+
+    expect(await screen.findByText("Please choose a .md file for this step.")).toBeInTheDocument();
+  });
+
   it("switches to a different project when another project is clicked in the navbar", async () => {
     const user = userEvent.setup();
     const client = createUploadRouteClient();

@@ -71,12 +71,12 @@ function getImportStatusCopy(importSummary: ProjectImportSummary | null) {
 export function ProjectRoute() {
   const { projectId = "" } = useParams();
   const client = useAudaisyClient();
-  const { state: sessionState } = useWorkspaceSession();
+  const { canUseModelRequiredFeatures, runtimeStatus } = useWorkspaceSession();
   const [projectState, setProjectState] = useState<ProjectState>({ status: "loading" });
   const [chapterState, setChapterState] = useState<ChapterState>({ status: "idle" });
   const [activeChapterId, setActiveChapterId] = useState<string | null>(null);
   const [trackedImportId, setTrackedImportId] = useState<string | null>(null);
-  const acceptedFormats = sessionState.status === "ready" ? sessionState.runtimeStatus.supportedImportFormats : [".txt", ".md"];
+  const acceptedFormats = runtimeStatus?.supportedImportFormats ?? [];
 
   useEffect(() => {
     let cancelled = false;
@@ -225,6 +225,9 @@ export function ProjectRoute() {
     project.imports.find((item) => item.id === trackedImportId) ??
     (project.chapters.length === 0 ? project.imports[0] ?? null : null);
   const importStatusCopy = getImportStatusCopy(importStatus);
+  const generateButtonClassName = canUseModelRequiredFeatures
+    ? styles.generateButton
+    : `${styles.generateButton} ${styles.generateButtonMuted}`;
 
   async function handleSave(chapterId: string, editorDoc: ProseMirrorNode) {
     const updatedChapter = await client.projects.updateChapter(project.id, chapterId, { editorDoc });
@@ -292,7 +295,7 @@ export function ProjectRoute() {
         <div className={styles.manuscriptWorkspace}>
           <div className={styles.manuscriptToolbar} data-testid="manuscript-toolbar">
             <span className={styles.toolbarTitle}>{project.title}</span>
-            <button className={styles.generateButton} disabled type="button">
+            <button className={generateButtonClassName} disabled={!canUseModelRequiredFeatures} type="button">
               Generate
             </button>
           </div>

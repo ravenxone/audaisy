@@ -6,7 +6,7 @@ from hashlib import sha256
 from fastapi.testclient import TestClient
 
 from audaisy_runtime.app import create_app
-from audaisy_runtime import CONTRACT_VERSION
+from audaisy_runtime import CONTRACT_VERSION, RUNTIME_VERSION
 
 
 def build_manifest(files: dict[str, bytes]) -> dict[str, object]:
@@ -51,7 +51,7 @@ def test_healthz_returns_liveness(make_client) -> None:
     assert response.json() == {
         "healthy": True,
         "contractVersion": CONTRACT_VERSION,
-        "runtimeVersion": "0.1.0",
+        "runtimeVersion": RUNTIME_VERSION,
     }
 
 

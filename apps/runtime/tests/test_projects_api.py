@@ -100,6 +100,7 @@ def test_get_project_includes_completed_imports_and_chapter_source_links(make_cl
 
     assert import_response.status_code == 201
     assert project_response.status_code == 200
+    assert project_response.json()["title"] == "Chapter One"
     assert project_response.json()["imports"] == [
         {
             "id": import_response.json()["import"]["id"],

@@ -6,12 +6,20 @@ import type { WorkspaceProfile } from "@/app/bootstrap/workspace-session";
 import { homeShellAssets, resolveAvatarOption } from "@/assets/home-shell-assets";
 import styles from "@/features/app-shell/app-shell.module.css";
 
+type ModelStatus = {
+  label: string;
+  detail?: string;
+  progress?: number | null;
+  onDismiss?: () => void;
+};
+
 type AppShellProps = {
   projects: ProjectCard[];
   profile: WorkspaceProfile | null;
   creatingProject: boolean;
   deletingProjectId: string | null;
   projectActionError: string | null;
+  modelStatus: ModelStatus | null;
   onCreateProject: () => void;
   onDeleteProject: (projectId: string) => void;
   children: ReactNode;
@@ -30,6 +38,7 @@ export function AppShell({
   profile,
   creatingProject,
   deletingProjectId,
+  modelStatus,
   projectActionError,
   onCreateProject,
   onDeleteProject,
@@ -39,7 +48,7 @@ export function AppShell({
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const profileName = profile?.name.trim() || "Your Name";
   const avatar = resolveAvatarOption(profile?.avatarId ?? null);
-  const profileMeta = "youremail@gmail.com";
+  const profileMeta = profile?.hasCompletedProfileSetup ? "Local profile" : "Profile setup needed";
   const DaisyMark = homeShellAssets.brand.daisy.src;
   const ToggleExpandedIcon = homeShellAssets.shell.toggle.expanded.src;
   const ToggleCollapsedIcon = homeShellAssets.shell.toggle.collapsed.src;
@@ -50,10 +59,10 @@ export function AppShell({
   const StartSomethingNewIcon = homeShellAssets.shell.startSomethingNew.src;
   const DocumentationIcon = homeShellAssets.shell.documentation.src;
   const SettingsIcon = homeShellAssets.shell.settings.src;
-  const selectedMainKey = location.pathname === "/home" ? "home" : null;
+  const selectedMainKey = location.pathname === "/library" ? "home" : null;
   const selectedProjectId = matchPath("/projects/:projectId", location.pathname)?.params.projectId ?? null;
   const mainNavItems: MainNavItem[] = [
-    { key: "home", label: "Home", iconSrc: HomeIcon, to: "/home" },
+    { key: "home", label: "Library", iconSrc: HomeIcon, to: "/library" },
     { key: "trash", label: "Trash", iconSrc: TrashIcon, disabled: true },
     { key: "downloads", label: "Downloads", iconSrc: DownloadsIcon, disabled: true },
   ];
@@ -85,7 +94,12 @@ export function AppShell({
                   }
 
                   return (
-                    <Link aria-current={selectedMainKey === item.key ? "page" : undefined} className={className} key={item.key} to={item.to ?? "/home"}>
+                    <Link
+                      aria-current={selectedMainKey === item.key ? "page" : undefined}
+                      className={className}
+                      key={item.key}
+                      to={item.to ?? "/library"}
+                    >
                       <img alt="" aria-hidden="true" className={styles.navIcon} src={item.iconSrc} />
                       <span>{item.label}</span>
                     </Link>
@@ -142,6 +156,31 @@ export function AppShell({
           </div>
 
           <div className={styles.sidebarBottom}>
+            {modelStatus ? (
+              <div className={styles.modelStatus} data-testid="sidebar-model-status">
+                <div className={styles.modelStatusHeader}>
+                  <div className={styles.modelStatusCopy}>
+                    <span className={styles.modelStatusLabel}>{modelStatus.label}</span>
+                    {modelStatus.detail ? <span className={styles.modelStatusDetail}>{modelStatus.detail}</span> : null}
+                  </div>
+                  {modelStatus.onDismiss ? (
+                    <button
+                      aria-label="Dismiss model status"
+                      className={styles.modelStatusDismissButton}
+                      onClick={modelStatus.onDismiss}
+                      type="button"
+                    >
+                      ×
+                    </button>
+                  ) : null}
+                </div>
+                {modelStatus.progress !== null && modelStatus.progress !== undefined ? (
+                  <div aria-hidden="true" className={styles.modelStatusTrack}>
+                    <span className={styles.modelStatusFill} style={{ transform: `scaleX(${modelStatus.progress})` }} />
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
             <div className={styles.section}>
               <p className={styles.sectionLabel}>Account</p>
               <nav aria-label="Secondary" className={styles.projectList}>

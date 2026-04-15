@@ -33,16 +33,26 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         container.database.initialize()
         container.model_manager.reconcile_install_state()
         recovery_task = asyncio.create_task(_resume_incomplete_imports())
+        render_recovery_task = asyncio.create_task(_recover_render_jobs())
         try:
             yield
         finally:
             recovery_task.cancel()
+            render_recovery_task.cancel()
             with suppress(asyncio.CancelledError):
                 await recovery_task
+            with suppress(asyncio.CancelledError):
+                await render_recovery_task
 
     async def _resume_incomplete_imports() -> None:
         try:
             await asyncio.to_thread(container.import_service.resume_incomplete_imports)
+        except Exception:
+            return
+
+    async def _recover_render_jobs() -> None:
+        try:
+            await asyncio.to_thread(container.render_service.recover_incomplete_jobs)
         except Exception:
             return
 

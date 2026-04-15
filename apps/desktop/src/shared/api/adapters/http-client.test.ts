@@ -5,6 +5,7 @@ import type {
   ProfileResponse,
   ProjectDetailResponse,
   RuntimeStatusResponse,
+  StartModelDownloadResponse,
 } from "@audaisy/contracts";
 import { describe, expect, it, vi } from "vitest";
 
@@ -64,6 +65,42 @@ describe("createHttpAudaisyClient", () => {
         headers: expect.objectContaining({
           Accept: "application/json",
         }),
+      }),
+    );
+  });
+
+  it("posts the canonical model download request", async () => {
+    const payload: StartModelDownloadResponse = {
+      result: "started",
+      modelInstall: {
+        state: "downloading",
+        requestedTier: "tada-3b-q4",
+        resolvedTier: null,
+        manifestVersion: "manifest-1",
+        checksumVerified: false,
+        bytesDownloaded: 0,
+        totalBytes: 1_000,
+        updatedAt: "2026-04-13T12:00:00.000Z",
+        lastErrorCode: null,
+        lastErrorMessage: null,
+      },
+    };
+    const fetchImpl = vi.fn<typeof fetch>(async () => jsonResponse(payload, 202));
+    const client = createHttpAudaisyClient({
+      baseUrl: "http://127.0.0.1:8000",
+      fetchImpl,
+    });
+
+    await expect(client.runtime.startModelDownload({})).resolves.toEqual(payload);
+    expect(fetchImpl).toHaveBeenCalledWith(
+      "http://127.0.0.1:8000/runtime/models/download",
+      expect.objectContaining({
+        method: "POST",
+        headers: expect.objectContaining({
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        }),
+        body: JSON.stringify({}),
       }),
     );
   });

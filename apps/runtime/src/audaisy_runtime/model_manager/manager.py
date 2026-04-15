@@ -8,7 +8,7 @@ import shutil
 import threading
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
-from typing import Any
+from typing import Any, Callable
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote
 from urllib.request import urlopen
@@ -208,6 +208,13 @@ class ModelManager:
             last_error_message=None,
         )
 
+    def resolve_installed_weights_dir(self) -> Path:
+        manifest = self._load_local_manifest()
+        roots = {PurePosixPath(artifact.local_path).parts[0] for artifact in manifest.files}
+        if len(roots) != 1:
+            raise ManifestValidationError(INVALID_LOCAL_MANIFEST_MESSAGE)
+        return self._cache_models_dir / next(iter(roots))
+
     def start_install(self, payload: StartModelDownloadRequest) -> StartModelDownloadResponse:
         with self._state_lock:
             current_status = self.get_install_status()
@@ -297,21 +304,34 @@ class ModelManager:
                 return
 
             manifest = self._load_local_manifest()
-            bytes_downloaded = 0
+            completed_bytes = self._verified_bytes(manifest)
             for artifact in manifest.files:
                 if self._verify_artifact(artifact):
-                    bytes_downloaded += artifact.size_bytes
                     continue
 
-                self._download_artifact(artifact)
-                bytes_downloaded += artifact.size_bytes
+                def handle_download_progress(bytes_written: int, *, prior_completed: int = completed_bytes) -> None:
+                    self._save_install_status(
+                        self._status_from_existing(
+                            persisted_status,
+                            state=ModelInstallState.DOWNLOADING,
+                            manifest_version=manifest.version,
+                            total_bytes=manifest.total_bytes,
+                            bytes_downloaded=prior_completed + bytes_written,
+                            checksum_verified=False,
+                            last_error_code=None,
+                            last_error_message=None,
+                        )
+                    )
+
+                self._download_artifact(artifact, on_progress=handle_download_progress)
+                completed_bytes += artifact.size_bytes
                 self._save_install_status(
                     self._status_from_existing(
                         persisted_status,
                         state=ModelInstallState.DOWNLOADING,
                         manifest_version=manifest.version,
                         total_bytes=manifest.total_bytes,
-                        bytes_downloaded=bytes_downloaded,
+                        bytes_downloaded=completed_bytes,
                         checksum_verified=False,
                         last_error_code=None,
                         last_error_message=None,
@@ -547,7 +567,12 @@ class ModelManager:
                 digest.update(chunk)
         return digest.hexdigest() == artifact.sha256
 
-    def _download_artifact(self, artifact: ModelArtifact) -> None:
+    def _download_artifact(
+        self,
+        artifact: ModelArtifact,
+        *,
+        on_progress: Callable[[int], None] | None = None,
+    ) -> None:
         artifact_path = self._artifact_path(artifact.local_path)
         artifact_path.parent.mkdir(parents=True, exist_ok=True)
         partial_path = artifact_path.with_suffix(f"{artifact_path.suffix}.part")
@@ -566,6 +591,8 @@ class ModelManager:
                     digest.update(chunk)
                     bytes_written += len(chunk)
                     file_handle.write(chunk)
+                    if on_progress is not None:
+                        on_progress(bytes_written)
         except Exception:
             if partial_path.exists():
                 partial_path.unlink()

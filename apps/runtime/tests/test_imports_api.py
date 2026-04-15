@@ -191,6 +191,7 @@ def test_import_processing_completes_and_persists_editor_ready_chapter(make_app,
 
         def assert_completed_state() -> None:
             project_detail = client.get(f"/projects/{project['id']}").json()
+            assert project_detail["title"] == "Chapter One"
             assert project_detail["imports"][0]["state"] == "completed"
             assert project_detail["chapters"] == [
                 {

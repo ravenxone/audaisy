@@ -13,6 +13,9 @@ from audaisy_runtime.contracts.models import (
     ModelInstallErrorCode,
     ModelInstallState,
     ModelTier,
+    RenderFailureCode,
+    RenderJobStatus,
+    RenderSegmentStatus,
     StartModelDownloadResult,
     RuntimeBlockingIssueCode,
 )
@@ -36,6 +39,9 @@ def _render_typescript_contracts(settings: Settings) -> str:
         export type ModelInstallState = {_render_union(ModelInstallState)};
         export type StartModelDownloadResult = {_render_union(StartModelDownloadResult)};
         export type ImportState = {_render_union(ImportState)};
+        export type RenderJobStatus = {_render_union(RenderJobStatus)};
+        export type RenderSegmentStatus = {_render_union(RenderSegmentStatus)};
+        export type RenderFailureCode = {_render_union(RenderFailureCode)};
 
         export type ApiError = {{
           code: ApiErrorCode;
@@ -205,11 +211,53 @@ def _render_typescript_contracts(settings: Settings) -> str:
           id: string;
           name: string;
           language: string;
-          cachedReferencePath: string | null;
+          hasReference: boolean;
         }};
 
         export type ListVoicePresetsResponse = {{
           presets: VoicePresetResponse[];
+        }};
+
+        export type CreateRenderJobRequest = {{
+          chapterId: string;
+          voicePresetId?: string | null;
+        }};
+
+        export type RenderSegmentSummary = {{
+          id: string;
+          chapterId: string;
+          order: number;
+          status: RenderSegmentStatus;
+          blockIds: string[];
+          hasAudio: boolean;
+          audioArtifactId: string | null;
+          startedAt?: string | null;
+          completedAt?: string | null;
+          errorCode?: RenderFailureCode | null;
+          errorMessage?: string | null;
+        }};
+
+        export type RenderJobResponse = {{
+          id: string;
+          projectId: string;
+          chapterId: string;
+          voicePresetId: string;
+          modelTier: ModelTier;
+          sourceChapterRevision: number;
+          status: RenderJobStatus;
+          segmentSummaries: RenderSegmentSummary[];
+          hasAudio: boolean;
+          audioArtifactId: string | null;
+          createdAt: string;
+          updatedAt: string;
+          startedAt?: string | null;
+          completedAt?: string | null;
+          errorCode?: RenderFailureCode | null;
+          errorMessage?: string | null;
+        }};
+
+        export type ListRenderJobsResponse = {{
+          jobs: RenderJobResponse[];
         }};
         """
     ).strip() + "\n"

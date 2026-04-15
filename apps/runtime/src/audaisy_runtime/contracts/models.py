@@ -19,6 +19,7 @@ class ApiErrorCode(StrEnum):
     INVALID_REQUEST = "INVALID_REQUEST"
     PROJECT_NOT_FOUND = "PROJECT_NOT_FOUND"
     CHAPTER_NOT_FOUND = "CHAPTER_NOT_FOUND"
+    RENDER_JOB_NOT_FOUND = "RENDER_JOB_NOT_FOUND"
     UNSUPPORTED_IMPORT_TYPE = "UNSUPPORTED_IMPORT_TYPE"
     MALFORMED_IMPORT = "MALFORMED_IMPORT"
     MODEL_HARDWARE_UNSUPPORTED = "MODEL_HARDWARE_UNSUPPORTED"
@@ -27,6 +28,11 @@ class ApiErrorCode(StrEnum):
     MODEL_MANIFEST_INVALID = "MODEL_MANIFEST_INVALID"
     MODEL_DOWNLOAD_FAILED = "MODEL_DOWNLOAD_FAILED"
     MODEL_CHECKSUM_MISMATCH = "MODEL_CHECKSUM_MISMATCH"
+    MODEL_NOT_READY = "MODEL_NOT_READY"
+    MODEL_LOAD_FAILED = "MODEL_LOAD_FAILED"
+    VOICE_PRESET_NOT_FOUND = "VOICE_PRESET_NOT_FOUND"
+    VOICE_REFERENCE_MISSING = "VOICE_REFERENCE_MISSING"
+    RENDER_GENERATION_FAILED = "RENDER_GENERATION_FAILED"
 
 
 class RuntimeBlockingIssueCode(StrEnum):
@@ -76,6 +82,31 @@ class ImportState(StrEnum):
 class ImportFormat(StrEnum):
     TXT = ".txt"
     MD = ".md"
+
+
+class RenderJobStatus(StrEnum):
+    QUEUED = "queued"
+    RUNNING = "running"
+    ASSEMBLING = "assembling"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
+class RenderSegmentStatus(StrEnum):
+    QUEUED = "queued"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
+class RenderFailureCode(StrEnum):
+    INTERRUPTED = "INTERRUPTED"
+    MODEL_NOT_READY = "MODEL_NOT_READY"
+    MODEL_LOAD_FAILED = "MODEL_LOAD_FAILED"
+    VOICE_PRESET_NOT_FOUND = "VOICE_PRESET_NOT_FOUND"
+    VOICE_REFERENCE_MISSING = "VOICE_REFERENCE_MISSING"
+    RENDER_GENERATION_FAILED = "RENDER_GENERATION_FAILED"
+    OUTPUT_ASSEMBLY_FAILED = "OUTPUT_ASSEMBLY_FAILED"
 
 
 class ApiError(CamelModel):
@@ -246,11 +277,53 @@ class VoicePresetResponse(CamelModel):
     id: str
     name: str
     language: str
-    cached_reference_path: str | None
+    has_reference: bool
 
 
 class ListVoicePresetsResponse(CamelModel):
     presets: list[VoicePresetResponse]
+
+
+class CreateRenderJobRequest(CamelModel):
+    chapter_id: str
+    voice_preset_id: str | None = None
+
+
+class RenderSegmentSummary(CamelModel):
+    id: str
+    chapter_id: str
+    order: int
+    status: RenderSegmentStatus
+    block_ids: list[str]
+    has_audio: bool
+    audio_artifact_id: str | None
+    started_at: str | None = None
+    completed_at: str | None = None
+    error_code: RenderFailureCode | None = None
+    error_message: str | None = None
+
+
+class RenderJobResponse(CamelModel):
+    id: str
+    project_id: str
+    chapter_id: str
+    voice_preset_id: str
+    model_tier: ModelTier
+    source_chapter_revision: int
+    status: RenderJobStatus
+    segment_summaries: list[RenderSegmentSummary]
+    has_audio: bool
+    audio_artifact_id: str | None
+    created_at: str
+    updated_at: str
+    started_at: str | None = None
+    completed_at: str | None = None
+    error_code: RenderFailureCode | None = None
+    error_message: str | None = None
+
+
+class ListRenderJobsResponse(CamelModel):
+    jobs: list[RenderJobResponse]
 
 
 ProseMirrorNode.model_rebuild()

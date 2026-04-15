@@ -67,7 +67,7 @@ describe("ManuscriptEditor", () => {
     const user = userEvent.setup();
     const chapterOne = createChapter("chapter-1", "Draft chapter");
     const chapterTwo = createChapter("chapter-2", "Second chapter");
-    const onSave = vi.fn(async () => {});
+    const onSave = vi.fn<(chapterId: string, editorDoc: ProseMirrorNode) => Promise<void>>(async () => {});
 
     const result = render(<ManuscriptEditor chapter={chapterOne} onSave={onSave} />);
 
@@ -95,7 +95,7 @@ describe("ManuscriptEditor", () => {
   it("flushes pending edits when the editor unmounts", async () => {
     const user = userEvent.setup();
     const chapter = createChapter("chapter-1", "Draft chapter");
-    const onSave = vi.fn(async () => {});
+    const onSave = vi.fn<(chapterId: string, editorDoc: ProseMirrorNode) => Promise<void>>(async () => {});
 
     const result = render(<ManuscriptEditor chapter={chapter} onSave={onSave} />);
 

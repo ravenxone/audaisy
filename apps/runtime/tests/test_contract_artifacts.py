@@ -46,6 +46,7 @@ def test_generated_contract_artifacts_match_repo_contract_package(runtime_settin
         ("/projects", "post"),
         ("/projects/{project_id}", "patch"),
         ("/projects/{project_id}/imports", "post"),
+        ("/projects/{project_id}/render-jobs", "post"),
         ("/runtime/models/download", "post"),
     ]:
         assert (
@@ -58,5 +59,9 @@ def test_generated_contract_artifacts_match_repo_contract_package(runtime_settin
     assert "export type ImportFormat =" in repo_types
     assert "export type CreateImportResponse =" in repo_types
     assert 'export type ModelTier = "tada-3b-q4";' in repo_types
+    assert "export type RenderJobResponse =" in repo_types
+    assert "export type RenderSegmentSummary =" in repo_types
+    assert "hasAudio: boolean;" in repo_types
+    assert "audioArtifactId: string | null;" in repo_types
     assert "supportedImportFormats: ImportFormat[];" in repo_types
     assert "export type StartModelDownloadResponse =" in repo_types

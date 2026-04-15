@@ -201,4 +201,5 @@ describe("Project manuscript workspace", () => {
     expect(screen.queryByText("Saved")).not.toBeInTheDocument();
     expect(screen.queryByText(/Save failed\. Retrying automatically\./)).not.toBeInTheDocument();
   });
+
 });

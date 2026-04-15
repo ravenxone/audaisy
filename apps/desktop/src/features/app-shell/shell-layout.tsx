@@ -6,6 +6,8 @@ import { useWorkspaceSession } from "@/app/bootstrap/workspace-session";
 import { AppShell } from "@/features/app-shell/app-shell";
 import { useAudaisyClient } from "@/shared/api/client-context";
 
+const MODEL_READY_STATUS_DISMISSED_KEY_PREFIX = "audaisy:model-ready-status-dismissed:";
+
 type ShellState =
   | { status: "loading" }
   | { status: "error"; message: string }
@@ -23,16 +25,45 @@ function toProjectCard(project: ProjectDetailResponse): ProjectCard {
   };
 }
 
+function formatBytes(bytes: number) {
+  if (bytes >= 1_000_000_000) {
+    return `${(bytes / 1_000_000_000).toFixed(1)} GB`;
+  }
+
+  if (bytes >= 1_000_000) {
+    return `${(bytes / 1_000_000).toFixed(1)} MB`;
+  }
+
+  return `${Math.round(bytes / 1_000)} KB`;
+}
+
+function readReadyStatusDismissed(key: string | null) {
+  if (typeof window === "undefined" || key === null) {
+    return false;
+  }
+
+  try {
+    return window.localStorage.getItem(key) === "true";
+  } catch {
+    return false;
+  }
+}
+
 export function AppShellLayout() {
   const client = useAudaisyClient();
   const location = useLocation();
   const navigate = useNavigate();
-  const { profile, state: sessionState } = useWorkspaceSession();
+  const { canUseModelRequiredFeatures, downloadProgress, modelInstall, profile, runtimeBlockingIssues, state: sessionState } =
+    useWorkspaceSession();
   const [state, setState] = useState<ShellState>({ status: "loading" });
   const [creatingProject, setCreatingProject] = useState(false);
   const [deletingProjectId, setDeletingProjectId] = useState<string | null>(null);
   const [projectActionError, setProjectActionError] = useState<string | null>(null);
+  const [dismissedReadyStatusKey, setDismissedReadyStatusKey] = useState<string | null>(null);
   const currentProjectId = matchPath("/projects/:projectId", location.pathname)?.params.projectId ?? null;
+  const readyDismissKey = canUseModelRequiredFeatures
+    ? `${MODEL_READY_STATUS_DISMISSED_KEY_PREFIX}${modelInstall?.manifestVersion ?? "installed"}`
+    : null;
   const hasCurrentProject =
     state.status === "ready" &&
     currentProjectId !== null &&
@@ -40,6 +71,61 @@ export function AppShellLayout() {
   const shouldLoadShellData =
     state.status === "loading" ||
     (state.status === "ready" && currentProjectId !== null && !hasCurrentProject);
+  const isModelReadyStatusDismissed =
+    readyDismissKey !== null && (dismissedReadyStatusKey === readyDismissKey || readReadyStatusDismissed(readyDismissKey));
+  const showReadyModelStatus = canUseModelRequiredFeatures && !isModelReadyStatusDismissed;
+  const modelStatus = showReadyModelStatus
+    ? {
+        label: "Model ready",
+        onDismiss: () => {
+          setDismissedReadyStatusKey(readyDismissKey);
+
+          try {
+            window.localStorage.setItem(readyDismissKey, "true");
+          } catch {
+            // Ignore storage failures and keep the shell usable.
+          }
+        },
+      }
+    : !canUseModelRequiredFeatures
+      ? {
+          label:
+            modelInstall?.state === "downloading"
+              ? downloadProgress !== null
+                ? `Downloading ${Math.round(downloadProgress * 100)}%`
+                : "Downloading model"
+              : modelInstall?.state === "verifying"
+                ? "Verifying model"
+                : modelInstall?.state === "error"
+                  ? "Model setup failed"
+                  : modelInstall?.state === "unavailable"
+                    ? "Model unavailable"
+                    : "Model not installed",
+          detail:
+            modelInstall?.state === "downloading" &&
+            typeof modelInstall.bytesDownloaded === "number" &&
+            typeof modelInstall.totalBytes === "number"
+              ? `${formatBytes(modelInstall.bytesDownloaded)} of ${formatBytes(modelInstall.totalBytes)} downloaded`
+              : modelInstall?.state === "verifying"
+                ? "Checking the downloaded model files."
+                : runtimeBlockingIssues[0]?.message ?? modelInstall?.lastErrorMessage ?? "Importing and editing stay available.",
+          progress: downloadProgress,
+        }
+      : null;
+
+  function upsertProject(project: ProjectDetailResponse) {
+    const projectCard = toProjectCard(project);
+    setState((current) =>
+      current.status === "ready"
+        ? {
+            status: "ready",
+            projects: current.projects.some((item) => item.id === project.id)
+              ? current.projects.map((item) => (item.id === project.id ? projectCard : item))
+              : [...current.projects, projectCard],
+          }
+        : current,
+    );
+  }
 
   useEffect(() => {
     if (!shouldLoadShellData) {
@@ -116,16 +202,7 @@ export function AppShellLayout() {
 
     try {
       const project = await client.projects.create({ title: "Untitled Project" });
-      const projectCard = toProjectCard(project);
-
-      setState((current) =>
-        current.status === "ready"
-          ? {
-              status: "ready",
-              projects: [...current.projects, projectCard],
-            }
-          : current,
-      );
+      upsertProject(project);
       navigate(`/projects/${project.id}`);
     } catch (error) {
       setProjectActionError(error instanceof Error ? error.message : "Unable to create project.");
@@ -154,7 +231,7 @@ export function AppShellLayout() {
       );
 
       if (currentProjectId === projectId) {
-        navigate("/home");
+        navigate("/library");
       }
     } catch (error) {
       setProjectActionError(error instanceof Error ? error.message : "Unable to delete project.");
@@ -167,6 +244,7 @@ export function AppShellLayout() {
     <AppShell
       creatingProject={creatingProject}
       deletingProjectId={deletingProjectId}
+      modelStatus={modelStatus}
       onCreateProject={() => void handleCreateProject()}
       onDeleteProject={(projectId) => void handleDeleteProject(projectId)}
       profile={profile}

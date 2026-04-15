@@ -18,6 +18,7 @@ class Settings:
     default_model_tier: ModelTier = ModelTier.TADA_3B_Q4
     machine_arch_override: str | None = None
     machine_memory_bytes_override: int | None = None
+    bundled_default_reference_asset_path_override: Path | None = None
     supported_import_formats: tuple[ImportFormat, ...] = (
         ImportFormat.TXT,
         ImportFormat.MD,
@@ -32,3 +33,9 @@ class Settings:
     @property
     def database_path(self) -> Path:
         return self.app_data_root / "audaisy.sqlite3"
+
+    @property
+    def bundled_default_reference_asset_path(self) -> Path:
+        if self.bundled_default_reference_asset_path_override is not None:
+            return self.bundled_default_reference_asset_path_override
+        return Path(__file__).resolve().parents[2] / "assets" / "voices" / "default-reference.wav"

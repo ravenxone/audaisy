@@ -1,6 +1,6 @@
 import { Navigate, Outlet, Route, Routes } from "react-router-dom";
 
-import { BootstrapGate } from "@/app/bootstrap/bootstrap-gate";
+import { BootstrapGate, OnboardingAccessGate, ShellAccessGate } from "@/app/bootstrap/bootstrap-gate";
 import { WorkspaceSessionProvider } from "@/app/bootstrap/workspace-session";
 import { AppShellLayout } from "@/features/app-shell/shell-layout";
 import { HomeRoute } from "@/features/home/home-route";
@@ -28,12 +28,16 @@ export function createAppRoutes({ client }: AppDependencies) {
     <Routes>
       <Route element={<AppProviders client={client} />} path="/">
         <Route element={<BootstrapGate />} index />
-        <Route element={<OnboardingRoute />} path="onboarding" />
-        <Route element={<AppShellLayout />}>
-          <Route element={<HomeRoute />} path="home" />
-          <Route element={<ProjectRoute />} path="projects/:projectId" />
+        <Route element={<OnboardingAccessGate />}>
+          <Route element={<OnboardingRoute />} path="onboarding" />
         </Route>
-        <Route element={<Navigate replace to="/home" />} path="*" />
+        <Route element={<ShellAccessGate />}>
+          <Route element={<AppShellLayout />}>
+            <Route element={<HomeRoute />} path="library" />
+            <Route element={<ProjectRoute />} path="projects/:projectId" />
+          </Route>
+        </Route>
+        <Route element={<Navigate replace to="/" />} path="*" />
       </Route>
     </Routes>
   );
