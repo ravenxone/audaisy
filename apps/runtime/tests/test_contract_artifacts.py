@@ -39,6 +39,9 @@ def test_generated_contract_artifacts_match_repo_contract_package(runtime_settin
     assert runtime_download_responses["422"]["content"]["application/json"]["schema"]["$ref"] == "#/components/schemas/ErrorEnvelope"
     assert runtime_download_responses["502"]["content"]["application/json"]["schema"]["$ref"] == "#/components/schemas/ErrorEnvelope"
     assert runtime_download_responses["507"]["content"]["application/json"]["schema"]["$ref"] == "#/components/schemas/ErrorEnvelope"
+    render_audio_responses = generated_openapi["paths"]["/projects/{project_id}/render-jobs/{job_id}/audio"]["get"]["responses"]
+    assert render_audio_responses["200"]["content"]["audio/wav"]["schema"]["format"] == "binary"
+    assert render_audio_responses["409"]["content"]["application/json"]["schema"]["$ref"] == "#/components/schemas/ErrorEnvelope"
     runtime_status_properties = generated_openapi["components"]["schemas"]["RuntimeStatusResponse"]["properties"]
     assert runtime_status_properties["supportedImportFormats"]["items"]["$ref"] == "#/components/schemas/ImportFormat"
     for path, method in [
@@ -63,5 +66,6 @@ def test_generated_contract_artifacts_match_repo_contract_package(runtime_settin
     assert "export type RenderSegmentSummary =" in repo_types
     assert "hasAudio: boolean;" in repo_types
     assert "audioArtifactId: string | null;" in repo_types
+    assert "RENDER_JOB_NOT_READY" in repo_types
     assert "supportedImportFormats: ImportFormat[];" in repo_types
     assert "export type StartModelDownloadResponse =" in repo_types

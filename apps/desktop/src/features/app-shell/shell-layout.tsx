@@ -5,6 +5,7 @@ import type { ProjectCard, ProjectDetailResponse } from "@audaisy/contracts";
 import { useWorkspaceSession } from "@/app/bootstrap/workspace-session";
 import { AppShell } from "@/features/app-shell/app-shell";
 import { useAudaisyClient } from "@/shared/api/client-context";
+import { formatBytes, getModelFeatureCopy } from "@/shared/runtime/model-feature-copy";
 
 const MODEL_READY_STATUS_DISMISSED_KEY_PREFIX = "audaisy:model-ready-status-dismissed:";
 
@@ -25,18 +26,6 @@ function toProjectCard(project: ProjectDetailResponse): ProjectCard {
   };
 }
 
-function formatBytes(bytes: number) {
-  if (bytes >= 1_000_000_000) {
-    return `${(bytes / 1_000_000_000).toFixed(1)} GB`;
-  }
-
-  if (bytes >= 1_000_000) {
-    return `${(bytes / 1_000_000).toFixed(1)} MB`;
-  }
-
-  return `${Math.round(bytes / 1_000)} KB`;
-}
-
 function readReadyStatusDismissed(key: string | null) {
   if (typeof window === "undefined" || key === null) {
     return false;
@@ -53,7 +42,7 @@ export function AppShellLayout() {
   const client = useAudaisyClient();
   const location = useLocation();
   const navigate = useNavigate();
-  const { canUseModelRequiredFeatures, downloadProgress, modelInstall, profile, runtimeBlockingIssues, state: sessionState } =
+  const { canUseModelRequiredFeatures, downloadProgress, modelInstall, profile, runtimeStatus, state: sessionState } =
     useWorkspaceSession();
   const [state, setState] = useState<ShellState>({ status: "loading" });
   const [creatingProject, setCreatingProject] = useState(false);
@@ -74,10 +63,15 @@ export function AppShellLayout() {
   const isModelReadyStatusDismissed =
     readyDismissKey !== null && (dismissedReadyStatusKey === readyDismissKey || readReadyStatusDismissed(readyDismissKey));
   const showReadyModelStatus = canUseModelRequiredFeatures && !isModelReadyStatusDismissed;
+  const blockedModelFeature = !canUseModelRequiredFeatures && runtimeStatus ? getModelFeatureCopy(runtimeStatus) : null;
   const modelStatus = showReadyModelStatus
     ? {
         label: "Model ready",
         onDismiss: () => {
+          if (!readyDismissKey) {
+            return;
+          }
+
           setDismissedReadyStatusKey(readyDismissKey);
 
           try {
@@ -87,28 +81,19 @@ export function AppShellLayout() {
           }
         },
       }
-    : !canUseModelRequiredFeatures
+    : blockedModelFeature
       ? {
+          ...blockedModelFeature,
           label:
-            modelInstall?.state === "downloading"
-              ? downloadProgress !== null
-                ? `Downloading ${Math.round(downloadProgress * 100)}%`
-                : "Downloading model"
-              : modelInstall?.state === "verifying"
-                ? "Verifying model"
-                : modelInstall?.state === "error"
-                  ? "Model setup failed"
-                  : modelInstall?.state === "unavailable"
-                    ? "Model unavailable"
-                    : "Model not installed",
+            modelInstall?.state === "downloading" && downloadProgress !== null
+              ? `Downloading ${Math.round(downloadProgress * 100)}%`
+              : blockedModelFeature.label,
           detail:
             modelInstall?.state === "downloading" &&
             typeof modelInstall.bytesDownloaded === "number" &&
             typeof modelInstall.totalBytes === "number"
               ? `${formatBytes(modelInstall.bytesDownloaded)} of ${formatBytes(modelInstall.totalBytes)} downloaded`
-              : modelInstall?.state === "verifying"
-                ? "Checking the downloaded model files."
-                : runtimeBlockingIssues[0]?.message ?? modelInstall?.lastErrorMessage ?? "Importing and editing stay available.",
+              : blockedModelFeature.detail,
           progress: downloadProgress,
         }
       : null;

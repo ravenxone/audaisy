@@ -1,11 +1,13 @@
 import type {
   ChapterDetailResponse,
+  CreateRenderJobRequest,
   CreateImportResponse,
   CreateProjectRequest,
   ListProjectsResponse,
   PatchProfileRequest,
   ProfileResponse,
   ProjectDetailResponse,
+  RenderJobResponse,
   RuntimeStatusResponse,
   StartModelDownloadRequest,
   StartModelDownloadResponse,
@@ -31,6 +33,10 @@ export type AudaisyClient = {
       chapterId: string,
       input: UpdateChapterRequest,
     ) => Promise<ChapterDetailResponse>;
+    listRenderJobs: (projectId: string) => Promise<RenderJobResponse[]>;
+    createRenderJob: (projectId: string, input: CreateRenderJobRequest) => Promise<RenderJobResponse>;
+    getRenderJob: (projectId: string, jobId: string) => Promise<RenderJobResponse>;
+    getRenderJobAudio: (projectId: string, jobId: string) => Promise<Blob>;
     delete: (projectId: string) => Promise<void>;
     importFile: (projectId: string, file: File) => Promise<CreateImportResponse>;
   };

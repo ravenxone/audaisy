@@ -1,13 +1,16 @@
 import type {
   ApiErrorCode,
   ChapterDetailResponse,
+  CreateRenderJobRequest,
   CreateImportResponse,
   CreateProjectRequest,
   ErrorEnvelope,
   ListProjectsResponse,
+  ListRenderJobsResponse,
   PatchProfileRequest,
   ProfileResponse,
   ProjectDetailResponse,
+  RenderJobResponse,
   RuntimeStatusResponse,
   StartModelDownloadRequest,
   StartModelDownloadResponse,
@@ -94,6 +97,16 @@ async function requestVoid(fetchImpl: FetchLike, baseUrl: string, path: string, 
   }
 }
 
+async function requestBlob(fetchImpl: FetchLike, baseUrl: string, path: string, init?: RequestInit): Promise<Blob> {
+  const response = await fetchImpl(buildUrl(baseUrl, path), init);
+
+  if (!response.ok) {
+    throw await parseError(response);
+  }
+
+  return response.blob();
+}
+
 export function createHttpAudaisyClient(options: HttpAudaisyClientOptions): AudaisyClient {
   const fetchImpl = options.fetchImpl ?? fetch;
 
@@ -152,6 +165,39 @@ export function createHttpAudaisyClient(options: HttpAudaisyClientOptions): Auda
               "Content-Type": "application/json",
             },
             body: JSON.stringify(input satisfies UpdateChapterRequest),
+          },
+        ),
+      listRenderJobs: async (projectId) => {
+        const response = await requestJson<ListRenderJobsResponse>(
+          fetchImpl,
+          options.baseUrl,
+          `/projects/${encodeURIComponent(projectId)}/render-jobs`,
+        );
+        return response.jobs;
+      },
+      createRenderJob: (projectId, input) =>
+        requestJson<RenderJobResponse>(fetchImpl, options.baseUrl, `/projects/${encodeURIComponent(projectId)}/render-jobs`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(input satisfies CreateRenderJobRequest),
+        }),
+      getRenderJob: (projectId, jobId) =>
+        requestJson<RenderJobResponse>(
+          fetchImpl,
+          options.baseUrl,
+          `/projects/${encodeURIComponent(projectId)}/render-jobs/${encodeURIComponent(jobId)}`,
+        ),
+      getRenderJobAudio: (projectId, jobId) =>
+        requestBlob(
+          fetchImpl,
+          options.baseUrl,
+          `/projects/${encodeURIComponent(projectId)}/render-jobs/${encodeURIComponent(jobId)}/audio`,
+          {
+            headers: {
+              Accept: "audio/wav, application/json",
+            },
           },
         ),
       delete: (projectId) =>

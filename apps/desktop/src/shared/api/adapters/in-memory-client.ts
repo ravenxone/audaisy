@@ -1,6 +1,7 @@
 import type { AudaisyClient } from "@/shared/api/client";
 import type {
   ChapterDetailResponse,
+  CreateRenderJobRequest,
   CreateImportResponse,
   CreateProjectRequest,
   ModelInstallStatus,
@@ -10,6 +11,7 @@ import type {
   ProjectCard,
   ProjectDetailResponse,
   ProseMirrorNode,
+  RenderJobResponse,
   RuntimeStatusResponse,
   StartModelDownloadRequest,
   StartModelDownloadResponse,
@@ -27,6 +29,10 @@ type InMemoryClientOptions = {
   createProjectImpl?: (input: CreateProjectRequest) => Promise<ProjectDetailResponse>;
   getProjectImpl?: (projectId: string) => Promise<ProjectDetailResponse>;
   getChapterImpl?: (projectId: string, chapterId: string) => Promise<ChapterDetailResponse>;
+  listRenderJobsImpl?: (projectId: string) => Promise<RenderJobResponse[]>;
+  createRenderJobImpl?: (projectId: string, input: CreateRenderJobRequest) => Promise<RenderJobResponse>;
+  getRenderJobImpl?: (projectId: string, jobId: string) => Promise<RenderJobResponse>;
+  getRenderJobAudioImpl?: (projectId: string, jobId: string) => Promise<Blob>;
   updateChapterImpl?: (
     projectId: string,
     chapterId: string,
@@ -36,6 +42,8 @@ type InMemoryClientOptions = {
   importFileImpl?: (projectId: string, file: File) => Promise<CreateImportResponse>;
   initialProjects?: ProjectDetailResponse[];
   initialChapterDetails?: ChapterDetailResponse[];
+  initialRenderJobs?: RenderJobResponse[];
+  initialRenderJobAudio?: Array<{ jobId: string; audio: Blob }>;
 };
 
 type InMemoryAudaisyClient = AudaisyClient & {
@@ -50,12 +58,17 @@ type InMemoryAudaisyClient = AudaisyClient & {
     listProjects: number;
     getProject: number;
     getChapter: number;
+    listRenderJobs: number;
+    createRenderJob: number;
+    getRenderJob: number;
+    getRenderJobAudio: number;
     updateChapter: number;
   };
   factories: {
     project: (id: string, title: string) => ProjectDetailResponse;
     projectCard: (project: ProjectDetailResponse) => ProjectCard;
     chapterDetail: (chapterId: string, projectId: string, title: string, order?: number) => ChapterDetailResponse;
+    renderJob: (jobId: string, projectId: string, chapterId: string, overrides?: Partial<RenderJobResponse>) => RenderJobResponse;
   };
 };
 
@@ -197,6 +210,69 @@ function nextTimestamp() {
   return new Date("2026-04-13T12:00:00.000Z").toISOString();
 }
 
+function extractBlockIds(editorDoc: ProseMirrorNode): string[] {
+  const blockIds: string[] = [];
+
+  function visit(node: ProseMirrorNode) {
+    const blockId = node.attrs?.blockId;
+    if (typeof blockId === "string" && blockId.trim()) {
+      blockIds.push(blockId);
+    }
+
+    for (const child of node.content ?? []) {
+      visit(child);
+    }
+  }
+
+  visit(editorDoc);
+  return blockIds;
+}
+
+function createRenderJobFactory(
+  jobId: string,
+  projectId: string,
+  chapterId: string,
+  chapter: ChapterDetailResponse,
+  project: ProjectDetailResponse,
+  overrides: Partial<RenderJobResponse> = {},
+): RenderJobResponse {
+  const timestamp = nextTimestamp();
+
+  return {
+    id: jobId,
+    projectId,
+    chapterId,
+    voicePresetId: project.defaultVoicePresetId ?? "default-local-reference",
+    modelTier: "tada-3b-q4",
+    sourceChapterRevision: chapter.revision,
+    status: "queued",
+    segmentSummaries: [
+      {
+        id: `${jobId}-segment-1`,
+        chapterId,
+        order: 1,
+        status: "queued",
+        blockIds: extractBlockIds(chapter.editorDoc),
+        hasAudio: false,
+        audioArtifactId: null,
+        startedAt: null,
+        completedAt: null,
+        errorCode: null,
+        errorMessage: null,
+      },
+    ],
+    hasAudio: false,
+    audioArtifactId: null,
+    createdAt: timestamp,
+    updatedAt: timestamp,
+    startedAt: null,
+    completedAt: null,
+    errorCode: null,
+    errorMessage: null,
+    ...overrides,
+  };
+}
+
 function syncRuntimeStatusFromModelInstall(
   currentStatus: RuntimeStatusResponse,
   modelInstall: ModelInstallStatus,
@@ -225,12 +301,19 @@ export function createInMemoryAudaisyClient(options: InMemoryClientOptions = {})
     listProjects: 0,
     getProject: 0,
     getChapter: 0,
+    listRenderJobs: 0,
+    createRenderJob: 0,
+    getRenderJob: 0,
+    getRenderJobAudio: 0,
     updateChapter: 0,
   };
 
   const seededProjects = options.initialProjects ?? [createProjectFactory("sample-project", "Sample Project")];
   const projects = new Map<string, ProjectDetailResponse>(seededProjects.map((project) => [project.id, project]));
   const chapterDetails = new Map<string, ChapterDetailResponse>();
+  const renderJobs = new Map<string, RenderJobResponse>((options.initialRenderJobs ?? []).map((job) => [job.id, job]));
+  const renderJobAudio = new Map<string, Blob>((options.initialRenderJobAudio ?? []).map(({ jobId, audio }) => [jobId, audio]));
+  let renderJobCounter = options.initialRenderJobs?.length ?? 0;
 
   for (const chapter of options.initialChapterDetails ?? []) {
     chapterDetails.set(chapter.id, chapter);
@@ -251,6 +334,10 @@ export function createInMemoryAudaisyClient(options: InMemoryClientOptions = {})
         chapterDetails.set(chapter.id, createChapterDetailFactory(chapter.id, project.id, chapter.title, chapter.order));
       }
     }
+  }
+
+  function syncRenderJob(job: RenderJobResponse) {
+    renderJobs.set(job.id, job);
   }
 
   const client: InMemoryAudaisyClient = {
@@ -338,6 +425,72 @@ export function createInMemoryAudaisyClient(options: InMemoryClientOptions = {})
         chapterDetails.set(chapterId, chapter);
         return chapter;
       },
+      listRenderJobs: async (projectId) => {
+        calls.listRenderJobs += 1;
+        const jobs =
+          (await options.listRenderJobsImpl?.(projectId)) ??
+          Array.from(renderJobs.values())
+            .filter((job) => job.projectId === projectId)
+            .sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+        for (const job of jobs) {
+          syncRenderJob(job);
+        }
+        return jobs;
+      },
+      createRenderJob: async (projectId, input) => {
+        calls.createRenderJob += 1;
+        const project = projects.get(projectId);
+        if (!project) {
+          throw new Error(`Project ${projectId} was not found.`);
+        }
+
+        const chapter = chapterDetails.get(input.chapterId);
+        if (!chapter || chapter.projectId !== projectId) {
+          throw new Error(`Chapter ${input.chapterId} was not found.`);
+        }
+
+        renderJobCounter += 1;
+        const createdJob =
+          (await options.createRenderJobImpl?.(projectId, input)) ??
+          createRenderJobFactory(`job-${renderJobCounter}`, projectId, input.chapterId, chapter, project);
+        syncRenderJob(createdJob);
+        return createdJob;
+      },
+      getRenderJob: async (projectId, jobId) => {
+        calls.getRenderJob += 1;
+        const job = (await options.getRenderJobImpl?.(projectId, jobId)) ?? renderJobs.get(jobId);
+        if (!job || job.projectId !== projectId) {
+          throw new Error(`Render job ${jobId} was not found.`);
+        }
+        syncRenderJob(job);
+        return job;
+      },
+      getRenderJobAudio: async (projectId, jobId) => {
+        calls.getRenderJobAudio += 1;
+        const audio = await options.getRenderJobAudioImpl?.(projectId, jobId);
+        if (audio) {
+          renderJobAudio.set(jobId, audio);
+          return audio;
+        }
+
+        const job = renderJobs.get(jobId);
+        if (!job || job.projectId !== projectId) {
+          throw new Error(`Render job ${jobId} was not found.`);
+        }
+
+        if (job.status !== "completed" || !job.hasAudio) {
+          throw new Error("Render job audio is not ready yet.");
+        }
+
+        const cachedAudio = renderJobAudio.get(jobId);
+        if (cachedAudio) {
+          return cachedAudio;
+        }
+
+        const generatedAudio = new Blob(["RIFF"], { type: "audio/wav" });
+        renderJobAudio.set(jobId, generatedAudio);
+        return generatedAudio;
+      },
       updateChapter: async (projectId, chapterId, input) => {
         calls.updateChapter += 1;
         const project = projects.get(projectId);
@@ -411,6 +564,11 @@ export function createInMemoryAudaisyClient(options: InMemoryClientOptions = {})
       project: createProjectFactory,
       projectCard: createProjectCard,
       chapterDetail: createChapterDetailFactory,
+      renderJob: (jobId, projectId, chapterId, overrides = {}) => {
+        const project = projects.get(projectId) ?? createProjectFactory(projectId, "Untitled Project");
+        const chapter = chapterDetails.get(chapterId) ?? createChapterDetailFactory(chapterId, projectId, "Chapter");
+        return createRenderJobFactory(jobId, projectId, chapterId, chapter, project, overrides);
+      },
     },
   };
 

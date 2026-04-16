@@ -115,6 +115,11 @@ def test_render_job_lifecycle_persists_segments_and_final_wav(make_app, read_db,
     assert all(row["error_code"] is None for row in segment_rows)
     assert all(row["error_message"] is None for row in segment_rows)
 
+    audio_response = client.get(f"/projects/{project['id']}/render-jobs/{job_id}/audio")
+    assert audio_response.status_code == 200
+    assert audio_response.headers["content-type"].startswith("audio/wav")
+    assert audio_response.content[:4] == b"RIFF"
+
 
 def test_render_job_failure_is_persisted_truthfully(make_app, read_db, runtime_settings) -> None:
     app = make_app
@@ -158,3 +163,27 @@ def test_render_job_failure_is_persisted_truthfully(make_app, read_db, runtime_s
     assert job_row["status"] == "failed"
     assert job_row["error_code"] == "RENDER_GENERATION_FAILED"
     assert job_row["output_audio_path"] is None
+
+
+def test_render_job_audio_is_blocked_until_completed(make_app, runtime_settings) -> None:
+    app = make_app
+    container = app.state.container
+    container.model_service.require_ready_weights_dir = lambda: runtime_settings.app_data_root / "fake-weights"  # type: ignore[method-assign]
+    container.model_service.load_reference = lambda reference_path, audio_text=None: {"referencePath": str(reference_path)}  # type: ignore[method-assign]
+    container.model_service.generate = lambda text, reference: SimpleNamespace(audio=b"generated")  # type: ignore[method-assign]
+    container.model_service.save_wav = lambda audio, output_path: write_test_wav(output_path)  # type: ignore[method-assign]
+    container.render_service.run_queued_jobs = lambda: None  # type: ignore[method-assign]
+
+    with TestClient(app) as client:
+        project = create_project(client)
+        chapter_id = create_long_chapter(client, project["id"])
+        create_response = client.post(
+            f"/projects/{project['id']}/render-jobs",
+            json={"chapterId": chapter_id},
+        )
+        job_id = create_response.json()["id"]
+        audio_response = client.get(f"/projects/{project['id']}/render-jobs/{job_id}/audio")
+
+    assert create_response.status_code == 201
+    assert audio_response.status_code == 409
+    assert audio_response.json()["error"]["code"] == ApiErrorCode.RENDER_JOB_NOT_READY

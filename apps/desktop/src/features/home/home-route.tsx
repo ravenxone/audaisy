@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 
 import { useWorkspaceSession } from "@/app/bootstrap/workspace-session";
 import { useAudaisyClient } from "@/shared/api/client-context";
+import { getModelFeatureCopy } from "@/shared/runtime/model-feature-copy";
 import styles from "@/features/home/home-route.module.css";
 
 const HOW_IT_WORKS = [
@@ -22,18 +23,6 @@ type CreateProjectState = {
   error: string | null;
 };
 
-function formatBytes(bytes: number) {
-  if (bytes >= 1_000_000_000) {
-    return `${(bytes / 1_000_000_000).toFixed(1)} GB`;
-  }
-
-  if (bytes >= 1_000_000) {
-    return `${(bytes / 1_000_000).toFixed(1)} MB`;
-  }
-
-  return `${Math.round(bytes / 1_000)} KB`;
-}
-
 export function HomeRoute() {
   const client = useAudaisyClient();
   const navigate = useNavigate();
@@ -45,6 +34,7 @@ export function HomeRoute() {
     modelInstall,
     modelInstallActionError,
     modelInstallActionPending,
+    runtimeStatus,
     runtimeBlockingIssues,
     startModelInstall,
   } = useWorkspaceSession();
@@ -52,32 +42,10 @@ export function HomeRoute() {
     loading: false,
     error: null,
   });
-  const modelPanel = !canUseModelRequiredFeatures
-    ? {
-        title:
-          modelInstall?.state === "downloading"
-            ? "Downloading model"
-            : modelInstall?.state === "verifying"
-              ? "Verifying model"
-              : modelInstall?.state === "error"
-                ? "Model setup failed"
-                : modelInstall?.state === "unavailable"
-                  ? "Model unavailable"
-                  : "Model setup",
-        body:
-          modelInstall?.state === "downloading" &&
-          modelInstall.totalBytes !== null &&
-          modelInstall.bytesDownloaded !== null
-            ? `Downloading ${formatBytes(modelInstall.bytesDownloaded)} of ${formatBytes(modelInstall.totalBytes)}. Importing and editing stay available.`
-            : modelInstall?.state === "verifying"
-              ? "Checking the downloaded model files. Importing and editing stay available."
-              : modelInstall?.state === "error"
-                ? (modelInstall.lastErrorMessage ?? modelInstallActionError ?? "Model setup failed. Importing and editing stay available.")
-                : modelInstall?.state === "unavailable"
-                  ? "This Mac cannot install the model right now."
-                  : "Model-backed features stay unavailable until setup finishes. Importing and editing are ready now.",
-      }
-    : null;
+  const modelPanel =
+    !canUseModelRequiredFeatures && runtimeStatus
+      ? getModelFeatureCopy(runtimeStatus, { actionErrorMessage: modelInstallActionError })
+      : null;
 
   async function handleStartModelSetup() {
     await startModelInstall().catch(() => undefined);
@@ -135,10 +103,10 @@ export function HomeRoute() {
       {modelPanel ? (
         <section className={styles.modelPanel} data-testid="library-model-panel">
           <div className={styles.modelPanelHeader}>
-            <h2 className={styles.modelTitle}>{modelPanel.title}</h2>
+            <h2 className={styles.modelTitle}>{modelPanel.label}</h2>
             {downloadProgress !== null ? <span className={styles.modelBadge}>{Math.round(downloadProgress * 100)}%</span> : null}
           </div>
-          <p className={styles.modelBody}>{modelPanel.body}</p>
+          <p className={styles.modelBody}>{modelPanel.detail}</p>
           {runtimeBlockingIssues.length > 0 ? (
             <ul className={styles.modelIssues}>
               {runtimeBlockingIssues.map((issue) => (

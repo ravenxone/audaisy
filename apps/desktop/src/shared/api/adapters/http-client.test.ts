@@ -4,6 +4,8 @@ import type {
   ListProjectsResponse,
   ProfileResponse,
   ProjectDetailResponse,
+  RenderJobResponse,
+  ListRenderJobsResponse,
   RuntimeStatusResponse,
   StartModelDownloadResponse,
 } from "@audaisy/contracts";
@@ -16,6 +18,15 @@ function jsonResponse(body: unknown, status = 200) {
     status,
     headers: {
       "Content-Type": "application/json",
+    },
+  });
+}
+
+function blobResponse(body: BlobPart, status = 200, contentType = "audio/wav") {
+  return new Response(body, {
+    status,
+    headers: {
+      "Content-Type": contentType,
     },
   });
 }
@@ -312,6 +323,132 @@ describe("createHttpAudaisyClient", () => {
         }),
         body: JSON.stringify({
           editorDoc: chapterPayload.editorDoc,
+        }),
+      }),
+    );
+  });
+
+  it("lists, creates, and gets render jobs with the canonical project-scoped routes", async () => {
+    const renderJobPayload: RenderJobResponse = {
+      id: "job-1",
+      projectId: "project-1",
+      chapterId: "chapter-1",
+      voicePresetId: "default-local-reference",
+      modelTier: "tada-3b-q4",
+      sourceChapterRevision: 2,
+      status: "queued",
+      segmentSummaries: [
+        {
+          id: "segment-1",
+          chapterId: "chapter-1",
+          order: 1,
+          status: "queued",
+          blockIds: ["paragraph-1"],
+          hasAudio: false,
+          audioArtifactId: null,
+          startedAt: null,
+          completedAt: null,
+          errorCode: null,
+          errorMessage: null,
+        },
+      ],
+      hasAudio: false,
+      audioArtifactId: null,
+      createdAt: "2026-04-13T12:00:00.000Z",
+      updatedAt: "2026-04-13T12:00:00.000Z",
+      startedAt: null,
+      completedAt: null,
+      errorCode: null,
+      errorMessage: null,
+    };
+    const listPayload: ListRenderJobsResponse = {
+      jobs: [renderJobPayload],
+    };
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockImplementationOnce(async () => jsonResponse(listPayload))
+      .mockImplementationOnce(async () => jsonResponse(renderJobPayload, 201))
+      .mockImplementationOnce(async () => jsonResponse(renderJobPayload));
+    const client = createHttpAudaisyClient({
+      baseUrl: "http://127.0.0.1:8000",
+      fetchImpl,
+    });
+
+    await expect(client.projects.listRenderJobs("project-1")).resolves.toEqual(listPayload.jobs);
+    await expect(client.projects.createRenderJob("project-1", { chapterId: "chapter-1" })).resolves.toEqual(renderJobPayload);
+    await expect(client.projects.getRenderJob("project-1", "job-1")).resolves.toEqual(renderJobPayload);
+
+    expect(fetchImpl).toHaveBeenNthCalledWith(
+      1,
+      "http://127.0.0.1:8000/projects/project-1/render-jobs",
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Accept: "application/json",
+        }),
+      }),
+    );
+    expect(fetchImpl).toHaveBeenNthCalledWith(
+      2,
+      "http://127.0.0.1:8000/projects/project-1/render-jobs",
+      expect.objectContaining({
+        method: "POST",
+        headers: expect.objectContaining({
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        }),
+        body: JSON.stringify({
+          chapterId: "chapter-1",
+        }),
+      }),
+    );
+    expect(fetchImpl).toHaveBeenNthCalledWith(
+      3,
+      "http://127.0.0.1:8000/projects/project-1/render-jobs/job-1",
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Accept: "application/json",
+        }),
+      }),
+    );
+  });
+
+  it("fetches render job audio as a blob and preserves typed errors when audio is not ready", async () => {
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockImplementationOnce(async () => blobResponse("RIFF....WAVE"))
+      .mockImplementationOnce(async () =>
+        jsonResponse(
+          {
+            error: {
+              code: "RENDER_JOB_NOT_READY",
+              message: "Render job audio is not ready yet.",
+            },
+          },
+          409,
+        ),
+      );
+    const client = createHttpAudaisyClient({
+      baseUrl: "http://127.0.0.1:8000",
+      fetchImpl,
+    });
+
+    const audio = await client.projects.getRenderJobAudio("project-1", "job-1");
+    expect(audio).toHaveProperty("size");
+    expect(audio.type).toBe("audio/wav");
+
+    await expect(client.projects.getRenderJobAudio("project-1", "job-1")).rejects.toMatchObject(
+      new AudaisyApiError("Render job audio is not ready yet.", {
+        status: 409,
+        code: "RENDER_JOB_NOT_READY",
+      }),
+    );
+
+    expect(fetchImpl).toHaveBeenNthCalledWith(
+      1,
+      "http://127.0.0.1:8000/projects/project-1/render-jobs/job-1/audio",
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Accept: "audio/wav, application/json",
         }),
       }),
     );

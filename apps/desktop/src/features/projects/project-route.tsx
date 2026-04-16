@@ -1,11 +1,13 @@
-import { useEffect, useState } from "react";
-import type { ChapterDetailResponse, ProjectDetailResponse, ProjectImportSummary, ProseMirrorNode } from "@audaisy/contracts";
+import { useEffect, useRef, useState } from "react";
+import type { ChapterDetailResponse, ProjectDetailResponse, ProjectImportSummary, ProseMirrorNode, RenderJobResponse } from "@audaisy/contracts";
 import { useParams } from "react-router-dom";
 
 import { useWorkspaceSession } from "@/app/bootstrap/workspace-session";
-import { ManuscriptEditor } from "@/features/projects/manuscript-editor";
+import { ChapterPlaybackBar } from "@/features/projects/chapter-playback-bar";
+import { ManuscriptEditor, type ManuscriptEditorHandle } from "@/features/projects/manuscript-editor";
 import styles from "@/features/projects/project-route.module.css";
 import { UploadDropzone } from "@/features/uploads/upload-dropzone";
+import { getModelFeatureCopy } from "@/shared/runtime/model-feature-copy";
 import { useAudaisyClient } from "@/shared/api/client-context";
 
 type ProjectState =
@@ -68,14 +70,71 @@ function getImportStatusCopy(importSummary: ProjectImportSummary | null) {
   }
 }
 
+function sortRenderJobs(jobs: RenderJobResponse[]) {
+  return [...jobs].sort((left, right) => {
+    if (left.createdAt === right.createdAt) {
+      return right.updatedAt.localeCompare(left.updatedAt);
+    }
+    return right.createdAt.localeCompare(left.createdAt);
+  });
+}
+
+function upsertRenderJob(jobs: RenderJobResponse[], nextJob: RenderJobResponse) {
+  return sortRenderJobs([nextJob, ...jobs.filter((job) => job.id !== nextJob.id)]);
+}
+
+function mergeRenderJobs(currentJobs: RenderJobResponse[], nextJobs: RenderJobResponse[]) {
+  const nextIds = new Set(nextJobs.map((job) => job.id));
+  return sortRenderJobs([...currentJobs.filter((job) => !nextIds.has(job.id)), ...nextJobs]);
+}
+
+function findLatestChapterJob(jobs: RenderJobResponse[], chapterId: string | null) {
+  if (!chapterId) {
+    return null;
+  }
+
+  return jobs.find((job) => job.chapterId === chapterId) ?? null;
+}
+
+function findLatestCompletedChapterJob(jobs: RenderJobResponse[], chapterId: string | null) {
+  if (!chapterId) {
+    return null;
+  }
+
+  return jobs.find((job) => job.chapterId === chapterId && job.status === "completed") ?? null;
+}
+
+function isTerminalRenderJob(job: RenderJobResponse | null) {
+  return job ? job.status === "completed" || job.status === "failed" : true;
+}
+
+function toRenderStatusLabel(status: RenderJobResponse["status"]) {
+  switch (status) {
+    case "queued":
+      return "Queued";
+    case "running":
+      return "Running";
+    case "assembling":
+      return "Assembling";
+    case "completed":
+      return "Completed";
+    case "failed":
+      return "Failed";
+  }
+}
+
 export function ProjectRoute() {
   const { projectId = "" } = useParams();
   const client = useAudaisyClient();
+  const editorRef = useRef<ManuscriptEditorHandle | null>(null);
   const { canUseModelRequiredFeatures, runtimeStatus } = useWorkspaceSession();
   const [projectState, setProjectState] = useState<ProjectState>({ status: "loading" });
   const [chapterState, setChapterState] = useState<ChapterState>({ status: "idle" });
   const [activeChapterId, setActiveChapterId] = useState<string | null>(null);
   const [trackedImportId, setTrackedImportId] = useState<string | null>(null);
+  const [renderJobs, setRenderJobs] = useState<RenderJobResponse[]>([]);
+  const [renderActionPending, setRenderActionPending] = useState(false);
+  const [renderActionError, setRenderActionError] = useState<string | null>(null);
   const acceptedFormats = runtimeStatus?.supportedImportFormats ?? [];
 
   useEffect(() => {
@@ -86,6 +145,8 @@ export function ProjectRoute() {
       setChapterState({ status: "idle" });
       setActiveChapterId(null);
       setTrackedImportId(null);
+      setRenderJobs([]);
+      setRenderActionError(null);
 
       try {
         const project = await client.projects.get(projectId);
@@ -199,6 +260,61 @@ export function ProjectRoute() {
     };
   }, [client, projectId, projectState.status, trackedImportId]);
 
+  useEffect(() => {
+    if (projectState.status !== "ready") {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadRenderJobs() {
+      try {
+        const jobs = await client.projects.listRenderJobs(projectId);
+        if (!cancelled) {
+          setRenderJobs((current) => mergeRenderJobs(current, jobs));
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setRenderActionError(toErrorMessage(error));
+        }
+      }
+    }
+
+    void loadRenderJobs();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [client, projectId, projectState.status]);
+
+  const latestChapterJob = findLatestChapterJob(renderJobs, activeChapterId);
+  const latestCompletedChapterJob = findLatestCompletedChapterJob(renderJobs, activeChapterId);
+
+  useEffect(() => {
+    if (!latestChapterJob || isTerminalRenderJob(latestChapterJob)) {
+      return;
+    }
+
+    let cancelled = false;
+    const timerId = window.setTimeout(async () => {
+      try {
+        const nextJob = await client.projects.getRenderJob(projectId, latestChapterJob.id);
+        if (!cancelled) {
+          setRenderJobs((current) => upsertRenderJob(current, nextJob));
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setRenderActionError(toErrorMessage(error));
+        }
+      }
+    }, 1000);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timerId);
+    };
+  }, [client, latestChapterJob, projectId]);
+
   if (projectState.status === "loading") {
     return (
       <section className={styles.projectPage}>
@@ -228,6 +344,20 @@ export function ProjectRoute() {
   const generateButtonClassName = canUseModelRequiredFeatures
     ? styles.generateButton
     : `${styles.generateButton} ${styles.generateButtonMuted}`;
+  const blockedGenerationCopy = !canUseModelRequiredFeatures && runtimeStatus ? getModelFeatureCopy(runtimeStatus) : null;
+  const renderStatusText = blockedGenerationCopy?.label ?? (latestChapterJob ? toRenderStatusLabel(latestChapterJob.status) : "");
+  const renderStatusClassName =
+    blockedGenerationCopy !== null
+      ? `${styles.toolbarStatus} ${styles.toolbarStatusMuted}`
+      : latestChapterJob?.status === "completed"
+        ? `${styles.toolbarStatus} ${styles.toolbarStatusComplete}`
+        : latestChapterJob?.status === "failed"
+          ? `${styles.toolbarStatus} ${styles.toolbarStatusFailed}`
+          : styles.toolbarStatus;
+  const playerFailureMessage =
+    latestChapterJob?.status === "failed" ? latestChapterJob.errorMessage ?? "Render job failed." : renderActionError;
+  const chapterTitle = chapterState.status === "ready" ? chapterState.chapter.title : project.title;
+  const generateDisabled = !canUseModelRequiredFeatures || chapterState.status !== "ready" || renderActionPending;
 
   async function handleSave(chapterId: string, editorDoc: ProseMirrorNode) {
     const updatedChapter = await client.projects.updateChapter(project.id, chapterId, { editorDoc });
@@ -247,6 +377,32 @@ export function ProjectRoute() {
           }
         : current,
     );
+  }
+
+  async function handleGenerateAudio() {
+    if (chapterState.status !== "ready" || generateDisabled) {
+      return;
+    }
+
+    setRenderActionPending(true);
+    setRenderActionError(null);
+
+    try {
+      const didSaveFlushSucceed = (await editorRef.current?.flushPendingSave()) ?? true;
+      if (!didSaveFlushSucceed) {
+        setRenderActionError("The latest manuscript changes are still saving. Audio generation stays blocked until save succeeds.");
+        return;
+      }
+
+      const renderJob = await client.projects.createRenderJob(project.id, {
+        chapterId: chapterState.chapter.id,
+      });
+      setRenderJobs((current) => upsertRenderJob(current, renderJob));
+    } catch (error) {
+      setRenderActionError(toErrorMessage(error));
+    } finally {
+      setRenderActionPending(false);
+    }
   }
 
   return (
@@ -295,29 +451,48 @@ export function ProjectRoute() {
         <div className={styles.manuscriptWorkspace}>
           <div className={styles.manuscriptToolbar} data-testid="manuscript-toolbar">
             <span className={styles.toolbarTitle}>{project.title}</span>
-            <button className={generateButtonClassName} disabled={!canUseModelRequiredFeatures} type="button">
-              Generate
+            <span className={renderStatusClassName} data-testid="manuscript-render-status">
+              {renderStatusText}
+            </span>
+            <button
+              className={generateButtonClassName}
+              disabled={generateDisabled}
+              onClick={() => void handleGenerateAudio()}
+              type="button"
+            >
+              {renderActionPending ? "Starting..." : "Generate Audio"}
             </button>
           </div>
 
           <div className={styles.editorViewport}>
-            {chapterState.status === "loading" ? (
-              <div className={styles.statusPanel}>
-                <h2 className="section-title">Editor loading</h2>
-                <p className="body-sm">Loading chapter content from the local runtime.</p>
-              </div>
-            ) : null}
+            <div className={styles.editorCanvas}>
+              {chapterState.status === "loading" ? (
+                <div className={styles.statusPanel}>
+                  <h2 className="section-title">Editor loading</h2>
+                  <p className="body-sm">Loading chapter content from the local runtime.</p>
+                </div>
+              ) : null}
 
-            {chapterState.status === "error" ? (
-              <div className={styles.statusPanel}>
-                <h2 className="section-title">Chapter unavailable</h2>
-                <p className="body-sm">{chapterState.message}</p>
-              </div>
-            ) : null}
+              {chapterState.status === "error" ? (
+                <div className={styles.statusPanel}>
+                  <h2 className="section-title">Chapter unavailable</h2>
+                  <p className="body-sm">{chapterState.message}</p>
+                </div>
+              ) : null}
 
-            {chapterState.status === "ready" ? (
-              <ManuscriptEditor chapter={chapterState.chapter} onSave={handleSave} />
-            ) : null}
+              {chapterState.status === "ready" ? (
+                <ManuscriptEditor chapter={chapterState.chapter} onSave={handleSave} ref={editorRef} />
+              ) : null}
+            </div>
+
+            <div className={styles.playerHoverRail}>
+              <ChapterPlaybackBar
+                chapterTitle={chapterTitle}
+                completedRenderJob={latestCompletedChapterJob}
+                failureMessage={playerFailureMessage}
+                projectId={project.id}
+              />
+            </div>
           </div>
         </div>
       )}

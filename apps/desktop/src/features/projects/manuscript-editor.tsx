@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type MutableRefObject } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState, type MutableRefObject } from "react";
 import type { ChapterDetailResponse, ProseMirrorNode } from "@audaisy/contracts";
 import Document from "@tiptap/extension-document";
 import Heading from "@tiptap/extension-heading";
@@ -85,17 +85,25 @@ type ManuscriptEditorProps = {
   onSave: (chapterId: string, editorDoc: ProseMirrorNode) => Promise<void>;
 };
 
+export type ManuscriptEditorHandle = {
+  flushPendingSave: () => Promise<boolean>;
+};
+
 type QueuedSave = {
   chapterId: string;
   editorDoc: ProseMirrorNode;
 };
 
-export function ManuscriptEditor({ chapter, onSave }: ManuscriptEditorProps) {
+export const ManuscriptEditor = forwardRef<ManuscriptEditorHandle, ManuscriptEditorProps>(function ManuscriptEditor(
+  { chapter, onSave }: ManuscriptEditorProps,
+  ref,
+) {
   const onSaveRef = useRef(onSave);
   const currentChapterIdRef = useRef(chapter.id);
   const queuedSaveRef = useRef<QueuedSave | null>(null);
   const saveTimerRef = useRef<number | null>(null);
   const retryTimerRef = useRef<number | null>(null);
+  const saveRequestRef = useRef<Promise<boolean> | null>(null);
   const retryAttemptRef = useRef(0);
   const savingRef = useRef(false);
   const mountedRef = useRef(true);
@@ -133,7 +141,7 @@ export function ManuscriptEditor({ chapter, onSave }: ManuscriptEditorProps) {
     retryAttemptRef.current = 0;
     setSaveState("saved");
     return () => {
-      flushPendingSave(chapter.id);
+      void flushPendingSave(chapter.id);
     };
   }, [chapter.id, editor]);
 
@@ -155,7 +163,7 @@ export function ManuscriptEditor({ chapter, onSave }: ManuscriptEditorProps) {
     clearTimeoutRef(saveTimerRef);
     clearTimeoutRef(retryTimerRef);
     saveTimerRef.current = window.setTimeout(() => {
-      void flushSave();
+      void flushQueuedSaves();
     }, delay);
   }
 
@@ -164,26 +172,11 @@ export function ManuscriptEditor({ chapter, onSave }: ManuscriptEditorProps) {
     const delay = Math.min(RETRY_BASE_MS * 2 ** retryAttemptRef.current, RETRY_MAX_MS);
     retryAttemptRef.current += 1;
     retryTimerRef.current = window.setTimeout(() => {
-      void flushSave();
+      void flushQueuedSaves();
     }, delay);
   }
 
-  function flushPendingSave(chapterId: string) {
-    clearTimeoutRef(saveTimerRef);
-    clearTimeoutRef(retryTimerRef);
-    const queuedSave = queuedSaveRef.current;
-    if (!queuedSave || queuedSave.chapterId !== chapterId) {
-      return;
-    }
-
-    void flushSave(queuedSave);
-  }
-
-  async function flushSave(snapshot = queuedSaveRef.current) {
-    if (savingRef.current || !snapshot) {
-      return;
-    }
-
+  async function persistQueuedSave(snapshot: QueuedSave) {
     savingRef.current = true;
     if (mountedRef.current) {
       setSaveState("saving");
@@ -191,26 +184,78 @@ export function ManuscriptEditor({ chapter, onSave }: ManuscriptEditorProps) {
 
     try {
       await onSaveRef.current(snapshot.chapterId, snapshot.editorDoc);
-      savingRef.current = false;
       retryAttemptRef.current = 0;
+      if (queuedSaveRef.current === snapshot) {
+        queuedSaveRef.current = null;
+      }
       if (mountedRef.current) {
         setSaveState("saved");
       }
-
-      if (queuedSaveRef.current === snapshot) {
-        queuedSaveRef.current = null;
-        return;
-      }
-
-      scheduleSave();
+      return true;
     } catch {
-      savingRef.current = false;
       if (mountedRef.current) {
         setSaveState("error");
         scheduleRetry();
       }
+      return false;
+    } finally {
+      savingRef.current = false;
     }
   }
+
+  async function flushQueuedSaves() {
+    clearTimeoutRef(saveTimerRef);
+    clearTimeoutRef(retryTimerRef);
+
+    while (true) {
+      if (savingRef.current) {
+        const activeRequest = saveRequestRef.current;
+        if (!activeRequest) {
+          return false;
+        }
+        const didActiveSaveSucceed = await activeRequest;
+        if (!didActiveSaveSucceed) {
+          return false;
+        }
+        continue;
+      }
+
+      const snapshot = queuedSaveRef.current;
+      if (!snapshot) {
+        return true;
+      }
+
+      const request = persistQueuedSave(snapshot);
+      saveRequestRef.current = request;
+      const didSaveSucceed = await request;
+      if (saveRequestRef.current === request) {
+        saveRequestRef.current = null;
+      }
+      if (!didSaveSucceed) {
+        return false;
+      }
+    }
+  }
+
+  async function flushPendingSave(chapterId: string) {
+    const queuedSave = queuedSaveRef.current;
+    if (!queuedSave || queuedSave.chapterId !== chapterId) {
+      if (savingRef.current && currentChapterIdRef.current === chapterId) {
+        return (await saveRequestRef.current) ?? false;
+      }
+      return true;
+    }
+
+    return flushQueuedSaves();
+  }
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      flushPendingSave: () => flushPendingSave(currentChapterIdRef.current),
+    }),
+    [],
+  );
 
   return (
     <div
@@ -224,4 +269,4 @@ export function ManuscriptEditor({ chapter, onSave }: ManuscriptEditorProps) {
       </div>
     </div>
   );
-}
+});

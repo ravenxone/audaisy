@@ -1,0 +1,281 @@
+.playerShell {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(100%, 1200px);
+}
+
+.playerBar {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) auto minmax(120px, 1fr);
+  align-items: center;
+  gap: 16px;
+  padding: 18px 26px 16px;
+  border: 1px solid rgba(200, 150, 0, 0.08);
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ffcf1f 0%, #ffc400 100%);
+  box-shadow:
+    0 24px 48px rgba(109, 87, 0, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28);
+}
+
+.playerLead {
+  display: flex;
+  flex-direction: column;
+  justify-self: start;
+  gap: 2px;
+  min-width: 0;
+}
+
+.playerLeadLabel {
+  color: rgba(88, 67, 0, 0.7);
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 10px;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.playerLeadTitle {
+  overflow: hidden;
+  color: rgba(61, 47, 0, 0.88);
+  font-family: var(--font-brand);
+  font-size: 16px;
+  line-height: 1.2;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.playerTransport {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: min(100%, 560px);
+  justify-self: center;
+}
+
+.playerControlRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+}
+
+.playerIconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.playerIconButton:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+}
+
+.playerPrimaryButton {
+  width: 46px;
+  height: 46px;
+}
+
+.playerIcon {
+  display: block;
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.playerPrimaryIcon {
+  width: 32px;
+  height: 32px;
+}
+
+.pauseGlyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  width: 32px;
+  height: 32px;
+  border: 2px solid #6d5700;
+  border-radius: 50%;
+}
+
+.pauseGlyph > span {
+  width: 3px;
+  height: 12px;
+  border-radius: 999px;
+  background: #6d5700;
+}
+
+.playerTimelineRow {
+  display: grid;
+  grid-template-columns: auto minmax(180px, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  width: min(100%, 560px);
+}
+
+.playerTime {
+  min-width: 36px;
+  color: rgba(38, 32, 0, 0.78);
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 11px;
+  line-height: 1.2;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.playerScrubber {
+  --player-progress: 0%;
+  width: 100%;
+  min-width: 0;
+  height: 18px;
+  margin: 0;
+  appearance: none;
+  border: 0;
+  background: transparent;
+}
+
+.playerScrubber::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    #171717 0%,
+    #171717 var(--player-progress),
+    rgba(23, 23, 23, 0.3) var(--player-progress),
+    rgba(23, 23, 23, 0.3) 100%
+  );
+}
+
+.playerScrubber::-webkit-slider-thumb {
+  width: 14px;
+  height: 14px;
+  margin-top: -5px;
+  border: 3px solid #171717;
+  border-radius: 50%;
+  background: #ffcc1d;
+  appearance: none;
+}
+
+.playerScrubber::-moz-range-track {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(23, 23, 23, 0.3);
+}
+
+.playerScrubber::-moz-range-progress {
+  height: 4px;
+  border-radius: 999px;
+  background: #171717;
+}
+
+.playerScrubber::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: 3px solid #171717;
+  border-radius: 50%;
+  background: #ffcc1d;
+}
+
+.playerScrubber:disabled {
+  opacity: 0.56;
+}
+
+.playerActionRail {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 14px;
+  justify-self: end;
+}
+
+.playerActionIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  opacity: 0.94;
+}
+
+.playerAlert {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 20px;
+  border: 1px solid rgba(178, 73, 53, 0.16);
+  border-radius: 999px;
+  background: rgba(255, 250, 239, 0.96);
+  box-shadow: var(--shadow-soft);
+}
+
+.playerAlertLabel {
+  color: rgba(88, 23, 10, 0.72);
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 11px;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.playerAlertMessage,
+.playerError {
+  color: rgba(88, 23, 10, 0.9);
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.playerError {
+  margin: 0 auto;
+  text-align: center;
+}
+
+@media (max-width: 960px) {
+  .playerBar {
+    grid-template-columns: 1fr;
+    gap: 14px;
+    padding: 16px 18px 14px;
+  }
+
+  .playerLead,
+  .playerActionRail {
+    justify-self: center;
+    text-align: center;
+  }
+
+  .playerTimelineRow {
+    width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .playerShell {
+    gap: 8px;
+  }
+
+  .playerBar {
+    border-radius: 32px;
+  }
+
+  .playerTimelineRow {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .playerTime {
+    min-width: 0;
+  }
+}

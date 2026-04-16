@@ -65,6 +65,19 @@ class RenderService:
             raise DomainError(ApiErrorCode.RENDER_JOB_NOT_FOUND, "Render job was not found.", 404)
         return self._build_job_response(job)
 
+    def get_job_audio(self, project_id: str, job_id: str) -> Path:
+        self._require_project(project_id)
+        job = self._render_job_repository.get(job_id)
+        if job is None or job["project_id"] != project_id:
+            raise DomainError(ApiErrorCode.RENDER_JOB_NOT_FOUND, "Render job was not found.", 404)
+        if job["status"] != RenderJobStatus.COMPLETED.value or not job["output_audio_path"]:
+            raise DomainError(ApiErrorCode.RENDER_JOB_NOT_READY, "Render job audio is not ready yet.", 409)
+
+        audio_path = self._app_paths.root / job["output_audio_path"]
+        if not audio_path.is_file():
+            raise DomainError(ApiErrorCode.RENDER_JOB_NOT_READY, "Render job audio is not ready yet.", 409)
+        return audio_path
+
     def create_job(self, project_id: str, payload: CreateRenderJobRequest) -> RenderJobResponse:
         project = self._require_project(project_id)
         try:

@@ -25,6 +25,7 @@
           "PROJECT_NOT_FOUND",
           "CHAPTER_NOT_FOUND",
           "RENDER_JOB_NOT_FOUND",
+          "RENDER_JOB_NOT_READY",
           "UNSUPPORTED_IMPORT_TYPE",
           "MALFORMED_IMPORT",
           "MODEL_HARDWARE_UNSUPPORTED",
@@ -2087,6 +2088,78 @@
           }
         },
         "summary": "Get Render Job",
+        "tags": [
+          "render-jobs"
+        ]
+      }
+    },
+    "/projects/{project_id}/render-jobs/{job_id}/audio": {
+      "get": {
+        "operationId": "get_render_job_audio_projects__project_id__render_jobs__job_id__audio_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "audio/wav": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Render Job Audio",
         "tags": [
           "render-jobs"
         ]

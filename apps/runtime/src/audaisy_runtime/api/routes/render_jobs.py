@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Annotated
 
 from fastapi import APIRouter, BackgroundTasks, Depends, status
+from fastapi.responses import FileResponse
 
 from audaisy_runtime.api.dependencies import get_container
 from audaisy_runtime.container import ApplicationContainer
@@ -49,3 +50,21 @@ def get_render_job(
     container: Annotated[ApplicationContainer, Depends(get_container)],
 ) -> RenderJobResponse:
     return container.render_service.get_job(project_id, job_id)
+
+
+@router.get(
+    "/{job_id}/audio",
+    response_class=FileResponse,
+    responses={
+        200: {"content": {"audio/wav": {"schema": {"type": "string", "format": "binary"}}}},
+        404: {"model": ErrorEnvelope},
+        409: {"model": ErrorEnvelope},
+    },
+)
+def get_render_job_audio(
+    project_id: str,
+    job_id: str,
+    container: Annotated[ApplicationContainer, Depends(get_container)],
+) -> FileResponse:
+    audio_path = container.render_service.get_job_audio(project_id, job_id)
+    return FileResponse(audio_path, media_type="audio/wav", filename=f"{job_id}.wav", content_disposition_type="inline")

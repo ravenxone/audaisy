@@ -5,7 +5,7 @@
 
 .editorSurface {
   min-height: 720px;
-  padding: clamp(40px, 5vw, 72px) clamp(28px, 5vw, 80px);
+  padding: clamp(40px, 5vw, 72px) clamp(28px, 5vw, 80px) clamp(132px, 14vw, 168px);
   border: 1px solid rgba(15, 23, 42, 0.08);
   border-radius: 0;
   background: #ffffff;
@@ -46,7 +46,7 @@
 @media (max-width: 900px) {
   .editorSurface {
     min-height: 560px;
-    padding: 28px 22px 36px;
+    padding: 28px 22px 132px;
   }
 
   .editorContent {
