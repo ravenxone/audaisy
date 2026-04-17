@@ -135,12 +135,11 @@
 
 .playerHoverRail {
   position: sticky;
-  bottom: 16px;
+  bottom: 0;
   z-index: 2;
   display: flex;
   align-self: end;
   justify-content: center;
-  padding: 0 16px 16px;
   pointer-events: none;
 }
 
@@ -179,7 +178,7 @@
   }
 
   .playerHoverRail {
-    bottom: 16px;
+    bottom: 0;
     padding-inline: 0;
   }
 }

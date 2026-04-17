@@ -220,7 +220,8 @@ export function ChapterPlaybackBar({
   const scrubberProgress = duration > 0 ? `${Math.min((currentTime / duration) * 100, 100)}%` : "0%";
   const scrubberMax = duration > 0 ? duration : Math.max(currentTime, 0);
   const playButtonLabel = playbackState === "playing" ? "Pause chapter audio" : "Play chapter audio";
-  const controlsDisabled = !completedRenderJob || playbackState === "loading";
+  const skipButtonsDisabled = !completedRenderJob;
+  const playPauseDisabled = !completedRenderJob || playbackState === "loading";
   const shouldRenderPlayer = Boolean(completedRenderJob || failureMessage);
   const visibleError = failureMessage ?? playbackError;
 
@@ -243,7 +244,6 @@ export function ChapterPlaybackBar({
     <section className={styles.playerShell} data-testid="chapter-player">
       <div className={styles.playerBar} data-state={playbackState}>
         <div className={styles.playerLead} aria-hidden="true">
-          <span className={styles.playerLeadLabel}>Creation</span>
           <span className={styles.playerLeadTitle}>{chapterTitle}</span>
         </div>
 
@@ -252,7 +252,7 @@ export function ChapterPlaybackBar({
             <button
               aria-label="Go backward 10 seconds"
               className={styles.playerIconButton}
-              disabled={controlsDisabled}
+              disabled={skipButtonsDisabled}
               onClick={() => handleSkip(-10)}
               type="button"
             >
@@ -262,7 +262,7 @@ export function ChapterPlaybackBar({
             <button
               aria-label={playButtonLabel}
               className={`${styles.playerIconButton} ${styles.playerPrimaryButton}`}
-              disabled={controlsDisabled}
+              disabled={playPauseDisabled}
               onClick={() => void handlePlayPause()}
               type="button"
             >
@@ -279,7 +279,7 @@ export function ChapterPlaybackBar({
             <button
               aria-label="Go forward 10 seconds"
               className={styles.playerIconButton}
-              disabled={controlsDisabled}
+              disabled={skipButtonsDisabled}
               onClick={() => handleSkip(10)}
               type="button"
             >
