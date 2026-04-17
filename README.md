@@ -1,12 +1,6 @@
-# Audaisy – Give every piece of writing a voice, and every voice an audience.
+# Audaisy – Create audiobooks, podcasts, voiceovers, spoken essays without paying for online services
 
-Audaisy makes high-quality audio creation local.
-
-For a long time, turning writing into natural, publishable audio meant slow studio workflows, expensive production, or cloud tools that took your work out of your hands. Audaisy changes that. It brings high-quality local audio generation to the desktop so writers, publishers, podcasters, educators, and creators can turn text into finished audio with speed, privacy, and control.
-
-Create audiobooks, podcasts, voiceovers, spoken essays, and narrated drafts from the same local workflow.
-
-
+Audaisy brings high-quality local audio generation to the desktop so writers, publishers, podcasters, educators, and creators can turn text into finished audio with speed, privacy, and control.
 
 Website: [audaisy.com](https://audaisy.com)
 
