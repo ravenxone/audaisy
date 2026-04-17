@@ -13,9 +13,5 @@ describe("Library screen", () => {
     expect(screen.getByText("You have no jobs running at the moment")).toBeInTheDocument();
     expect(screen.queryByTestId("library-model-panel")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Get started" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "How it Works" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Upload a file" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Check the imported text" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Generate audio and share!" })).toBeInTheDocument();
   });
 });

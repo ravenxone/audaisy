@@ -6,18 +6,6 @@ import { useAudaisyClient } from "@/shared/api/client-context";
 import { getModelFeatureCopy } from "@/shared/runtime/model-feature-copy";
 import styles from "@/features/home/home-route.module.css";
 
-const HOW_IT_WORKS = [
-  {
-    title: "Upload a file",
-  },
-  {
-    title: "Check the imported text",
-  },
-  {
-    title: "Generate audio and share!",
-  },
-];
-
 type CreateProjectState = {
   loading: boolean;
   error: string | null;
@@ -121,17 +109,6 @@ export function HomeRoute() {
           ) : null}
         </section>
       ) : null}
-
-      <section className={styles.howItWorks}>
-        <h2 className={styles.howHeading}>How it Works</h2>
-        <div className={styles.cardGrid}>
-          {HOW_IT_WORKS.map((item) => (
-            <article className={styles.card} key={item.title}>
-              <h3 className={styles.cardTitle}>{item.title}</h3>
-            </article>
-          ))}
-        </div>
-      </section>
     </section>
   );
 }

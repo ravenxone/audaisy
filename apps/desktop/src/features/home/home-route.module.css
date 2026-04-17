@@ -16,9 +16,7 @@
 
 .title,
 .subtitle,
-.cta,
-.howHeading,
-.cardTitle {
+.cta {
   margin: 0;
   font-family: var(--font-brand);
   font-size: var(--font-section-size);
@@ -27,8 +25,6 @@
 }
 
 .title,
-.howHeading,
-.cardTitle,
 .cta {
   color: var(--color-text-primary);
 }
@@ -164,31 +160,6 @@
   opacity: 0.72;
 }
 
-.howItWorks {
-  display: flex;
-  flex-direction: column;
-  gap: 60px;
-}
-
-.cardGrid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(280px, 367px));
-  gap: 60px;
-}
-
-.card {
-  min-height: 277px;
-  padding: 24px 20px;
-  border-radius: 8px;
-  background: var(--color-surface-strong);
-}
-
-@media (max-width: 1400px) {
-  .cardGrid {
-    grid-template-columns: repeat(auto-fit, minmax(280px, 367px));
-  }
-}
-
 @media (max-width: 980px) {
   .home {
     gap: 120px;
@@ -196,9 +167,5 @@
 
   .hero {
     padding-top: 24px;
-  }
-
-  .cardGrid {
-    gap: 24px;
   }
 }

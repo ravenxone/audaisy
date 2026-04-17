@@ -74,6 +74,26 @@ export function AppShell({
 
   return (
     <div className={shellClassName} data-state={sidebarState}>
+      <div className={styles.shellChrome}>
+        <span aria-label="Audaisy brand" className={styles.brand} role="img">
+          <img alt="" aria-hidden="true" className={styles.brandIcon} src={DaisyMark} />
+        </span>
+        <button
+          aria-controls="audaisy-sidebar"
+          aria-expanded={isSidebarOpen}
+          aria-label="Sidebar toggle"
+          className={styles.toggleButton}
+          data-state={sidebarState}
+          onClick={() => setIsSidebarOpen((current) => !current)}
+          type="button"
+        >
+          <span aria-hidden="true" className={styles.toggleIconStack}>
+            <img alt="" className={`${styles.toggleIcon} ${styles.toggleIconExpanded}`} data-icon="expanded" src={ToggleExpandedIcon} />
+            <img alt="" className={`${styles.toggleIcon} ${styles.toggleIconCollapsed}`} data-icon="collapsed" src={ToggleCollapsedIcon} />
+          </span>
+        </button>
+      </div>
+
       <div className={styles.sidebarRail} data-state={sidebarState}>
         <aside aria-hidden={!isSidebarOpen} className={styles.sidebar} data-state={sidebarState} id="audaisy-sidebar">
           <div className={styles.sidebarTop}>
@@ -212,25 +232,7 @@ export function AppShell({
       </div>
 
       <div className={styles.workspace}>
-        <div className={toolbarClassName}>
-          <span aria-label="Audaisy brand" className={styles.brand} role="img">
-            <img alt="" aria-hidden="true" className={styles.brandIcon} src={DaisyMark} />
-          </span>
-          <button
-            aria-controls="audaisy-sidebar"
-            aria-expanded={isSidebarOpen}
-            aria-label="Sidebar toggle"
-            className={styles.toggleButton}
-            data-state={sidebarState}
-            onClick={() => setIsSidebarOpen((current) => !current)}
-            type="button"
-          >
-            <span aria-hidden="true" className={styles.toggleIconStack}>
-              <img alt="" className={`${styles.toggleIcon} ${styles.toggleIconExpanded}`} data-icon="expanded" src={ToggleExpandedIcon} />
-              <img alt="" className={`${styles.toggleIcon} ${styles.toggleIconCollapsed}`} data-icon="collapsed" src={ToggleCollapsedIcon} />
-            </span>
-          </button>
-        </div>
+        <div className={toolbarClassName} aria-hidden="true" />
         <main className={contentClassName}>{children}</main>
       </div>
     </div>
