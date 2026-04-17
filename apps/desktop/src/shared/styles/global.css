@@ -11,7 +11,10 @@
   --color-danger: #b24935;
   --color-success: #5a7c21;
 
-  --font-brand: "American Typewriter", "American Typewriter Semibold", Georgia, serif;
+  /* Grandiflora One (headings); Gowun Dodum (UI, buttons, body copy) */
+  --font-heading: "Grandiflora One", Georgia, "Times New Roman", serif;
+  --font-body: "Gowun Dodum", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-brand: var(--font-body);
 
   --font-display-size: 64px;
   --font-display-line-height: 74px;
@@ -58,7 +61,16 @@ body {
   margin: 0;
   background: var(--color-background);
   color: var(--color-text-primary);
-  font-family: var(--font-brand);
+  font-family: var(--font-body);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-heading);
 }
 
 button,
@@ -95,6 +107,7 @@ a {
 }
 
 .display-title {
+  font-family: var(--font-heading);
   font-size: clamp(42px, 5vw, var(--font-display-size));
   line-height: clamp(48px, 5.5vw, var(--font-display-line-height));
   font-weight: 700;
@@ -102,12 +115,14 @@ a {
 }
 
 .section-title {
+  font-family: var(--font-heading);
   font-size: var(--font-section-size);
   line-height: var(--font-section-line-height);
   font-weight: 700;
 }
 
 .section-title-sm {
+  font-family: var(--font-heading);
   font-size: var(--font-section-size);
   line-height: var(--font-section-line-height);
 }

@@ -16,7 +16,7 @@
 .projectTitle {
   margin: 0;
   color: var(--color-text-primary);
-  font-family: var(--font-brand);
+  font-family: var(--font-heading);
   font-size: var(--font-section-size);
   line-height: var(--font-section-line-height);
   font-weight: 400;
